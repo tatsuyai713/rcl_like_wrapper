@@ -345,7 +345,7 @@ namespace lwrcl
     participant_factory->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
 
     participant_ = std::shared_ptr<eprosima::fastdds::dds::DomainParticipant>(
-    eprosima::fastdds::dds::DomainParticipantFactory::get_instance()->create_participant(domain_id, participant_qos),
+    participant_factory->get_instance()->create_participant(domain_id, participant_qos),
     DomainParticipantDeleter());
     if (!participant_)
     {
@@ -370,6 +370,7 @@ namespace lwrcl
     publisher_list_.clear();
     subscription_list_.clear();
     timer_list_.clear();
+    get_global_registry().remove_node(this);
   }
 
   std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> Node::get_participant() const
