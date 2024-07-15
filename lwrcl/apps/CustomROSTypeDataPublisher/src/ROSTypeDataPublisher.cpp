@@ -34,7 +34,7 @@ bool ROSTypeDataPublisher::init(const std::string& config_file_path) {
 
     // Setup timer for periodic callback
     timer_callback_ = [this]() { this->callbackPublish(interval_ms_); };
-    timer_ptr_ = create_timer<std::chrono::milliseconds>(std::chrono::milliseconds(interval_ms_), timer_callback_);
+    timer_ptr_ = create_timer(std::chrono::milliseconds(interval_ms_), timer_callback_);
     if (!timer_ptr_) {
         std::cerr << "Error: Failed to create a timer." << std::endl;
         return false;
@@ -50,5 +50,5 @@ void ROSTypeDataPublisher::callbackPublish(int test) {
     std::string s = "BigData" + std::to_string(publish_msg->index() % 10);
     publish_msg->message(s);
 
-    publisher_ptr_->publish(publish_msg.get());
+    publisher_ptr_->publish(publish_msg);
 }

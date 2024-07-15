@@ -16,9 +16,12 @@ namespace lwrcl
   };
 
   template <class T>
-  class Channel
+  class Channel : public std::enable_shared_from_this<Channel<T>>
   {
   public:
+    using SharedPtr = std::shared_ptr<Channel<T>>;
+    Channel() = default;
+    ~Channel() = default;
     void produce(T &&x)
     {
       std::lock_guard<std::mutex> lock{mtx_};
@@ -34,6 +37,13 @@ namespace lwrcl
       std::unique_lock<std::mutex> lock{mtx_};
       cv_.wait(lock, [this]
                { return !queue_.empty() || closed_; });
+      
+      // if (!cv_.wait_for(lock, std::chrono::milliseconds(1000), [this]
+      //                   { return !queue_.empty() || closed_; }))
+      // {
+      //   return false;
+      // }
+
       if (closed_ && queue_.empty())
       {
         return false;

@@ -4,11 +4,9 @@
 #include <limits.h>
 #include <string>
 
-SIGNAL_HANDLER_DEFINE()
-
 int main(int argc, char **argv) 
 {
-    SIGNAL_HANDLER_INIT()
+    lwrcl::init(argc, argv);
     std::cout << "Starting ROSTypeDataPublisherExecutor" << std::endl;
 
     // Buffer to hold the path to the current executable

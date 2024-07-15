@@ -26,13 +26,14 @@ namespace lwrcl
     virtual int32_t get_subscriber_count() = 0;
   };
   template <typename T>
-  class Publisher : public IPublisher
+  class Publisher : public IPublisher, public std::enable_shared_from_this<Publisher<T>>
   {
   public:
     Publisher(dds::DomainParticipant *participant, MessageType *message_type, const std::string &topic,
-              const dds::TopicQos &qos)
+              const uint16_t &depth)
         : participant_(participant), message_type_(message_type), topic_(nullptr), publisher_(nullptr), writer_(nullptr)
     {
+      lwrcl::dds::TopicQos qos = lwrcl::dds::TOPIC_QOS_DEFAULT;
       if (message_type_->get_type_support().register_type(participant_) != ReturnCode_t::RETCODE_OK)
       {
         throw std::runtime_error("Failed to register message type");
@@ -61,7 +62,7 @@ namespace lwrcl
       dds::DataWriterQos writer_qos = dds::DATAWRITER_QOS_DEFAULT;
       writer_qos.endpoint().history_memory_policy = rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
       // writer_qos.data_sharing().automatic();
-      writer_qos.history().depth = 10;
+      writer_qos.history().depth = depth;
       writer_qos.reliability().kind = dds::RELIABLE_RELIABILITY_QOS;
       // writer_qos.durability().kind = dds::TRANSIENT_LOCAL_DURABILITY_QOS;
       writer_qos.data_sharing().automatic();
@@ -91,15 +92,22 @@ namespace lwrcl
       }
     }
 
-    void publish(T *message) const
+    void publish(std::shared_ptr<T> message) const
     {
-      writer_->write(message);
+      writer_->write(message.get());
+    }
+
+    void publish(T message) const
+    {
+      writer_->write(&message);
     }
 
     int32_t get_subscriber_count()
     {
       return listener_.count;
     }
+
+  using SharedPtr = std::shared_ptr<Publisher<T>>;
 
   private:
     dds::DomainParticipant *participant_;

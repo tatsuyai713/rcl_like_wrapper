@@ -31,7 +31,7 @@ private:
     std::string topic_name_;
     uint16_t interval_ms_;
     Publisher<CustomMessage>* publisher_ptr_;
-    Timer<std::chrono::milliseconds>* timer_ptr_;
+    TimerBase* timer_ptr_;
     std::function<void()> timer_callback_;
     // MessageType
     ROSTypeData::msg::CustomMessageType pub_message_type_;

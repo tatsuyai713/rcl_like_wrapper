@@ -13,206 +13,248 @@
 #include <cstring>
 #include <iostream>
 #include <atomic>
+#include <string>
+#include <cstdarg> // For variable arguments handling
+#include <iostream>
+#include <chrono>
+#include <iomanip>
 
 #include "fast_dds_header.hpp"
 #include "signal_handler.hpp"
 
+#include "clock_time_duration.hpp"
 #include "publisher.hpp"
-#include "subscriber.hpp"
+#include "subscription.hpp"
 #include "timer.hpp"
 
 namespace lwrcl
 {
+  extern void lwrcl_signal_handler(int signal);
 
-  class Clock;
+  class Logger;
+  class Node;
 
-  class Node
+  // lwrcl functions
+  bool ok(void);
+  void spin(std::shared_ptr<lwrcl::Node> node);
+  void init(int argc, char *argv[]);
+  void shutdown(void);
+  void sleep_for(const lwrcl::Duration &duration);
+  void spin_some(std::shared_ptr<lwrcl::Node> node);
+
+  class QoS
   {
   public:
-    Node(int domain_id);
+    QoS();
+    QoS(uint16_t depth);
+    QoS(const QoS &qos);
+    QoS operator=(const QoS &qos);
+    ~QoS();
+    uint16_t get_depth() const;
+
+  private:
+    uint16_t depth_;
+  };
+
+  class Node : public std::enable_shared_from_this<Node>
+  {
+  public:
+    using SharedPtr = std::shared_ptr<Node>;
+
+    std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> get_participant() const;
+    std::string get_name() const;
+    Logger get_logger() const;
+
+    template <typename T>
+    std::shared_ptr<Publisher<T>> create_publisher(MessageType *message_type, const std::string &topic, const uint16_t &depth)
+    {
+      auto publisher = std::make_shared<Publisher<T>>(participant_.get(), message_type, std::string("rt/") + topic, depth);
+      publisher_list_.push_front(publisher);
+      return publisher;
+    }
+
+    template <typename T>
+    std::shared_ptr<Publisher<T>> create_publisher(MessageType *message_type, const std::string &topic, const QoS &depth)
+    {
+      auto publisher = std::make_shared<Publisher<T>>(participant_.get(), message_type, std::string("rt/") + topic, depth.get_depth());
+      publisher_list_.push_front(publisher);
+      return publisher;
+    }
+
+    template <typename T>
+    std::shared_ptr<Subscription<T>> create_subscription(MessageType *message_type, const std::string &topic, const uint16_t &depth,
+                                                         std::function<void(T *)> callback_function)
+    {
+      auto subscription = std::make_shared<Subscription<T>>(participant_.get(), message_type, std::string("rt/") + topic, depth, callback_function, channel_);
+      subscription_list_.push_front(subscription);
+      return subscription;
+    }
+
+    template <typename T>
+    std::shared_ptr<Subscription<T>> create_subscription(MessageType *message_type, const std::string &topic, const QoS &depth,
+                                                         std::function<void(std::shared_ptr<T>)> callback_function)
+    {
+      auto subscription = std::make_shared<Subscription<T>>(participant_.get(), message_type, std::string("rt/") + topic, depth.get_depth(), callback_function, channel_);
+      subscription_list_.push_front(subscription);
+      return subscription;
+    }
+
+    template <typename Rep, typename Period>
+    std::shared_ptr<TimerBase> create_timer(std::chrono::duration<Rep, Period> period, std::function<void()> callback_function)
+    {
+      lwrcl::Clock::ClockType clock_type = Clock::ClockType::SYSTEM_TIME;
+      auto duration = Duration(period);
+      auto timer = std::make_shared<TimerBase>(duration, callback_function, channel_, clock_type);
+      timer_list_.push_front(timer);
+      return timer;
+    }
+
+    template <typename Rep, typename Period>
+    std::shared_ptr<TimerBase> create_wall_timer(std::chrono::duration<Rep, Period> period, std::function<void()> callback_function)
+    {
+      lwrcl::Clock::ClockType clock_type = Clock::ClockType::STEADY_TIME;
+      auto duration = Duration(period);
+      auto timer = std::make_shared<TimerBase>(duration, callback_function, channel_, clock_type);
+      timer_list_.push_front(timer);
+      return timer;
+    }
+
+    static std::shared_ptr<Node> make_shared(int domain_id);
+    static std::shared_ptr<Node> make_shared(int domain_id, const std::string &name);
+    static std::shared_ptr<Node> make_shared(const std::string &name);
+    static std::shared_ptr<Node> make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
+
+    friend void lwrcl::spin(std::shared_ptr<Node> node);
+    friend void lwrcl::spin_some(std::shared_ptr<Node> node);
+
+    virtual void shutdown();
+    virtual Clock::SharedPtr get_clock();
+
     Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
     virtual ~Node();
-    std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> get_participant() const;
 
-    template <typename T>
-    Publisher<T> *create_publisher(MessageType *message_type, const std::string &topic, const dds::TopicQos &qos)
-    {
-      auto publisher = std::make_unique<Publisher<T>>(participant_.get(), message_type, std::string("rt/") + topic, qos);
-      Publisher<T> *raw_ptr = publisher.get();
-      publisher_list_.push_front(std::move(publisher));
-      return raw_ptr;
-    }
-
-    template <typename T>
-    Subscriber<T> *create_subscription(MessageType *message_type, const std::string &topic, const dds::TopicQos &qos,
-                                       std::function<void(T *)> callback_function)
-    {
-      auto subscriber = std::make_unique<Subscriber<T>>(participant_.get(), message_type, std::string("rt/") + topic, qos, callback_function, channel_);
-      Subscriber<T> *raw_ptr = subscriber.get();
-      subscription_list_.push_front(std::move(subscriber));
-      return raw_ptr;
-    }
-
-    template <typename T>
-    Timer<T> *create_timer(T period, std::function<void()> callback_function)
-    {
-      auto timer = std::make_unique<Timer<T>>(period, callback_function, channel_);
-      Timer<T> *raw_ptr = timer.get();
-      timer_list_.push_front(std::move(timer));
-      return raw_ptr;
-    }
+  private:
     virtual void spin();
     virtual void spin_some();
-    virtual void stop_spin();
-    virtual void shutdown();
-    virtual Clock *get_clock();
+
+  protected:
+    Node(int domain_id);
+    Node(int domain_id, const std::string &name);
+    Node(const std::string &name);
 
   private:
     struct DomainParticipantDeleter
     {
-        void operator()(eprosima::fastdds::dds::DomainParticipant* participant) const
+      void operator()(eprosima::fastdds::dds::DomainParticipant *participant) const
+      {
+        if (participant != nullptr)
         {
-            if (participant != nullptr)
-            {
-                eprosima::fastdds::dds::DomainParticipantFactory::get_instance()->delete_participant(participant);
-            }
+          eprosima::fastdds::dds::DomainParticipantFactory::get_instance()->delete_participant(participant);
         }
+      }
     };
 
     std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant_;
-    std::forward_list<std::unique_ptr<IPublisher>> publisher_list_;
-    std::forward_list<std::unique_ptr<ISubscriber>> subscription_list_;
-    std::forward_list<std::unique_ptr<ITimer>> timer_list_;
-    Channel<ChannelCallback *> channel_;
-    std::unique_ptr<Clock> clock_;
+    std::forward_list<std::shared_ptr<IPublisher>> publisher_list_;
+    std::forward_list<std::shared_ptr<ISubscription>> subscription_list_;
+    std::forward_list<std::shared_ptr<ITimerBase>> timer_list_;
+    Channel<ChannelCallback*>::SharedPtr channel_;
+    Clock::SharedPtr clock_;
+    std::string name_;
   };
 
-  // lwrcl state
-  bool ok(void);
-
-  // Executor that manages and executes nodes in a single thread.
-  class SingleThreadedExecutor
+  namespace executors
   {
-  public:
-    SingleThreadedExecutor();
-    ~SingleThreadedExecutor();
-
-    void add_node(Node *node);
-    void remove_node(Node *node);
-    void stop_spin();
-    void spin();
-    void spin_some();
-    void shutdown();
-
-  private:
-    std::vector<Node *> nodes_; // List of nodes managed by the executor.
-    std::mutex mutex_;          // Mutex for thread-safe access to the nodes list.
-  };
-
-  // Executor that manages and executes nodes, each in its own thread, allowing for parallel processing.
-  class MultiThreadedExecutor
-  {
-  public:
-    MultiThreadedExecutor();
-    ~MultiThreadedExecutor();
-
-    void add_node(Node *node);
-    void remove_node(Node *node);
-    void stop_spin();
-    void spin();
-    void spin_some();
-    void shutdown();
-
-  private:
-    std::vector<Node *> nodes_;        // List of nodes managed by the executor.
-    std::vector<std::thread> threads_; // Threads created for each node for parallel execution.
-    std::mutex mutex_;                 // Mutex for thread-safe access to the nodes and threads lists.
-  };
-
-  class Duration;
-
-  class Time
-  {
-  public:
-    Time();
-    Time(int64_t nanoseconds);
-    Time(int32_t seconds, uint32_t nanoseconds);
-    int64_t nanoseconds() const;
-    double seconds() const;
-
-    Time operator+(const Duration &rhs) const;
-    Time operator-(const Duration &rhs) const;
-    Duration operator-(const Time &rhs) const;
-
-    bool operator==(const Time &rhs) const;
-    bool operator!=(const Time &rhs) const;
-    bool operator<(const Time &rhs) const;
-    bool operator<=(const Time &rhs) const;
-    bool operator>(const Time &rhs) const;
-    bool operator>=(const Time &rhs) const;
-
-  private:
-    int64_t nanoseconds_;
-  };
-
-  class Duration
-  {
-  public:
-    Duration();
-    Duration(int64_t nanoseconds);
-    Duration(int32_t seconds, uint32_t nanoseconds);
-
-    template <typename Rep, typename Period>
-    Duration(const std::chrono::duration<Rep, Period> &duration)
+    // Executor that manages and executes nodes in a single thread.
+    class SingleThreadedExecutor
     {
-      auto nanos = std::chrono::duration_cast<std::chrono::nanoseconds>(duration);
-      nanoseconds_ = nanos.count();
-    }
+    public:
+      SingleThreadedExecutor();
+      ~SingleThreadedExecutor();
 
-    int64_t nanoseconds() const;
-    double seconds() const;
+      void add_node(Node::SharedPtr node);
+      void remove_node(Node::SharedPtr node);
+      void cancel();
+      void spin();
+      void spin_some();
+      // void spin_once(std::chrono::nanoseconds timeout);
 
-    Duration operator+(const Duration &rhs) const;
-    Duration operator-(const Duration &rhs) const;
-
-    bool operator==(const Duration &rhs) const;
-    bool operator!=(const Duration &rhs) const;
-    bool operator<(const Duration &rhs) const;
-    bool operator<=(const Duration &rhs) const;
-    bool operator>(const Duration &rhs) const;
-    bool operator>=(const Duration &rhs) const;
-
-  private:
-    int64_t nanoseconds_;
-  };
-
-  class Clock
-  {
-  public:
-    enum class ClockType
-    {
-      SYSTEM_TIME
+    private:
+      std::vector<Node::SharedPtr> nodes_; // List of nodes managed by the executor.
+      std::mutex mutex_;          // Mutex for thread-safe access to the nodes list.
     };
 
-  private:
-    ClockType type_;
+    // Executor that manages and executes nodes, each in its own thread, allowing for parallel processing.
+    class MultiThreadedExecutor
+    {
+    public:
+      MultiThreadedExecutor();
+      ~MultiThreadedExecutor();
 
-  public:
-    explicit Clock(ClockType type = ClockType::SYSTEM_TIME);
-    Time now();
-    ClockType get_clock_type() const;
-  };
+      void add_node(Node::SharedPtr node);
+      void remove_node(Node::SharedPtr node);
+      void cancel();
+      void spin();
+      void spin_some();
+      // void spin_once(std::chrono::nanoseconds timeout);
+      int get_number_of_threads() const;
+
+    private:
+      std::vector<Node::SharedPtr> nodes_;        // List of nodes managed by the executor.
+      std::vector<std::thread> threads_; // Threads created for each node for parallel execution.
+      mutable std::mutex mutex_;                 // Mutex for thread-safe access to the nodes and threads lists.
+    };
+  } // namespace executors
 
   class Rate
+  {
+  private:
+    Duration period_;
+    std::chrono::system_clock::time_point next_time_;
+
+  public:
+    explicit Rate(const Duration &period);
+    void sleep();
+  };
+
+  class WallRate
   {
   private:
     Duration period_;
     std::chrono::steady_clock::time_point next_time_;
 
   public:
-    explicit Rate(const Duration &period);
+    explicit WallRate(const Duration &period);
     void sleep();
   };
+
+  enum LogLevel
+  {
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR
+  };
+
+  void log(LogLevel level, const char *format, ...);
+
+  // Logger クラス
+  class Logger
+  {
+  public:
+    Logger(const std::string &node_name);
+
+    void log(LogLevel level, const char *format, ...) const;
+
+  private:
+    std::string node_name_;
+  };
+
 } // namespace lwrcl
+
+#define LWRCL_DEBUG(logger, ...) (logger).log(lwrcl::DEBUG, __VA_ARGS__)
+#define LWRCL_INFO(logger, ...) (logger).log(lwrcl::INFO, __VA_ARGS__)
+#define LWRCL_WARN(logger, ...) (logger).log(lwrcl::WARN, __VA_ARGS__)
+#define LWRCL_ERROR(logger, ...) (logger).log(lwrcl::ERROR, __VA_ARGS__)
 
 #endif // LWRCL_HPP_

@@ -68,8 +68,7 @@ namespace tf2_ros
     TransformBroadcaster(lwrcl::Node* node)
     : node_(node)
     {
-      lwrcl::dds::TopicQos topic_qos = lwrcl::dds::TOPIC_QOS_DEFAULT;
-      publisher_ = node_->create_publisher<tf2_msgs::msg::TFMessage>(&pub_message_type_, "tf", topic_qos);
+      publisher_ = node_->create_publisher<tf2_msgs::msg::TFMessage>(&pub_message_type_, "tf", 10);
     }
 
     /** \brief Send a TransformStamped message
@@ -93,7 +92,7 @@ namespace tf2_ros
 
   private:
     lwrcl::Node* node_;
-    lwrcl::Publisher<tf2_msgs::msg::TFMessage>* publisher_;
+    std::shared_ptr<lwrcl::Publisher<tf2_msgs::msg::TFMessage>> publisher_;
     tf2_msgs::msg::TFMessageType pub_message_type_;
   };
 

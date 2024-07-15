@@ -56,7 +56,7 @@ namespace tf2_ros
       message->transforms().push_back(*it);
     }
 
-    publisher_->publish(message.get());
+    publisher_->publish(message);
   }
 
 } // namespace tf2_ros

@@ -18,7 +18,7 @@ This library provides a simplified API similar to ROS 2's rclcpp for working wit
 
 - **spin**: Continuously processes incoming messages and executes callbacks.
 - **spin_some**: Processes available messages without blocking.
-- **stop_spin**: Stops the continuous message processing loop.
+- **shutdown**: Stops the continuous message processing loop.
 
 ### Publisher
 
@@ -26,14 +26,15 @@ This library provides a simplified API similar to ROS 2's rclcpp for working wit
 - **publish**: Sends messages to the associated topic.
 - **get_subscriber_count**: Retrieves the number of subscribers currently connected to the publisher.
 
-### Subscriber
+### Subscription
 
 - **create_subscription**: Creates a subscription for receiving messages on a specified topic with a callback function.
 - **get_publisher_count**: Counts the number of publishers to which the subscriber is connected.
 
 ### Timer
 
-- **create_timer**: Sets up a timer to call a function at a specified interval.
+- **create_timer**: Sets up a system clock timer to call a function at a specified interval.
+- **create_wall_timer**: Sets up a monotonic timer to call a function at a specified interval.
 - **stop_timer**: Halts the timer.
 
 ## Time, Duration, Clock, and Rate Implementation
@@ -105,7 +106,7 @@ The `SingleThreadedExecutor` manages and spins multiple nodes sequentially withi
 - **add_node(Node* node):** Integrates a node into the executor's workflow.
 - **remove_node(Node* node):** Detaches a node from the executor.
 - **spin():** Begins the sequential processing of messages for all nodes managed by the executor.
-- **stop_spin():** Halts the processing loop, ensuring all nodes are gracefully stopped.
+- **cancel():** Halts the processing loop, ensuring all nodes are gracefully stopped.
 
 ## MultiThreadedExecutor
 
@@ -123,7 +124,7 @@ The `MultiThreadedExecutor` extends the functionality of the SingleThreadedExecu
 - **add_node(Node* node):** Adds a node to be managed concurrently by the executor.
 - **remove_node(Node* node):** Removes a node from the concurrent processing pool.
 - **spin():** Starts concurrent message processing for all nodes, leveraging multi-threading to achieve parallel execution.
-- **stop_spin():** Stops all threads and ensures a clean shutdown of node operations.
+- **cancel():** Stops all threads and ensures a clean shutdown of node operations.
 
 ## Choosing Between Executors
 

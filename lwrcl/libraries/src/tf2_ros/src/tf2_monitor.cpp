@@ -44,8 +44,6 @@
 #include "tf2_msgs/msg/TFMessage.h"
 #include "tf2_msgs/msg/TFMessagePubSubTypes.h"
 
-SIGNAL_HANDLER_DEFINE()
-
 class TFListenerNode : public lwrcl::Node
 {
 public:
@@ -64,8 +62,8 @@ public:
   bool using_specific_chain_;
 
   std::shared_ptr<TFListenerNode> node_;
-  lwrcl::Subscriber<tf2_msgs::msg::TFMessage>* subscriber_tf_;
-  lwrcl::Subscriber<tf2_msgs::msg::TFMessage>* subscriber_tf_static_;
+  std::shared_ptr<lwrcl::Subscription<tf2_msgs::msg::TFMessage>> subscriber_tf_;
+  std::shared_ptr<lwrcl::Subscription<tf2_msgs::msg::TFMessage>> subscriber_tf_static_;
   tf2_msgs::msg::TFMessageType sub_tf_message_type_;
   tf2_msgs::msg::TFMessageType sub_tf_static_message_type_;
   std::vector<std::string> chain_;
@@ -81,31 +79,29 @@ public:
   tf2_msgs::msg::TFMessage message_;
   std::mutex map_mutex_;
 
-  void callback(tf2_msgs::msg::TFMessage *in_message)
+  void callback(tf2_msgs::msg::TFMessage::SharedPtr in_message)
 {
     if (in_message == nullptr)
     {
         std::cerr << "Error: Received null message in callback." << std::endl;
         return;
     }
-
-    const tf2_msgs::msg::TFMessage & message = *(in_message);
     // TODO(tfoote): recover authority info
     std::string authority = "<no authority available>";
 
     double average_offset = 0;
     std::unique_lock<std::mutex> my_lock(map_mutex_);
-    for (size_t i = 0; i < message.transforms().size(); i++) {
-      frame_authority_map[message.transforms()[i].child_frame_id()] = authority;
+    for (size_t i = 0; i < in_message->transforms().size(); i++) {
+      frame_authority_map[in_message->transforms()[i].child_frame_id()] = authority;
 
       double offset = clock_->now().seconds() - tf2_ros::timeToSec(
-        message.transforms()[i].header().stamp());
+        in_message->transforms()[i].header().stamp());
       average_offset += offset;
 
       std::map<std::string, std::vector<double>>::iterator it = delay_map.find(
-        message.transforms()[i].child_frame_id());
+        in_message->transforms()[i].child_frame_id());
       if (it == delay_map.end()) {
-        delay_map[message.transforms()[i].child_frame_id()] = std::vector<double>(1, offset);
+        delay_map[in_message->transforms()[i].child_frame_id()] = std::vector<double>(1, offset);
       } else {
         it->second.push_back(offset);
         if (it->second.size() > 1000) {
@@ -114,7 +110,7 @@ public:
       }
     }
 
-    average_offset /= std::max(static_cast<size_t>(1), message.transforms().size());
+    average_offset /= std::max(static_cast<size_t>(1), in_message->transforms().size());
 
     // create the authority log
     std::map<std::string, std::vector<double>>::iterator it2 = authority_map.find(authority);
@@ -154,7 +150,7 @@ public:
 
     buffer_ = std::make_shared<tf2_ros::Buffer>(clock_, tf2::Duration(tf2::BUFFER_CORE_DEFAULT_CACHE_TIME));
 
-    tf_ = std::make_shared<tf2_ros::TransformListener>(*buffer_, this->node_.get(), true, 0);
+    tf_ = std::make_shared<tf2_ros::TransformListener>(*buffer_, this->node_, true, 0);
 
 
     if (using_specific_chain_) {
@@ -178,10 +174,9 @@ public:
       }
     }
 
-    lwrcl::dds::TopicQos topic_qos = lwrcl::dds::TOPIC_QOS_DEFAULT;
-    subscriber_tf_ = node_->create_subscription<tf2_msgs::msg::TFMessage>(&sub_tf_message_type_, "tf", topic_qos,
+    subscriber_tf_ = node_->create_subscription<tf2_msgs::msg::TFMessage>(&sub_tf_message_type_, "tf", 10,
       std::bind(&TFMonitor::callback, this, std::placeholders::_1));
-    subscriber_tf_static_ = node_->create_subscription<tf2_msgs::msg::TFMessage>(&sub_tf_static_message_type_, "tf_static", topic_qos,
+    subscriber_tf_static_ = node_->create_subscription<tf2_msgs::msg::TFMessage>(&sub_tf_static_message_type_, "tf_static", 10,
       std::bind(&TFMonitor::callback, this, std::placeholders::_1));
   }
 
@@ -288,7 +283,7 @@ public:
 
 int main(int argc, char ** argv)
 {
-  SIGNAL_HANDLER_INIT()
+  lwrcl::init(argc, argv);
 
   // TODO(tfoote): make anonymous
   std::shared_ptr<TFListenerNode> nh = std::make_shared<TFListenerNode>(0);
@@ -323,7 +318,7 @@ int main(int argc, char ** argv)
   // see: http://stackoverflow.com/a/27389714/671658
   // I (wjwwood) chose to use the lamda rather than the static cast solution.
   auto run_func = [](std::shared_ptr<lwrcl::Node> node) {
-      return node->spin();
+      return lwrcl::spin(node);
     };
   TFMonitor monitor(nh, using_specific_chain, framea, frameb);
   std::thread spinner(run_func, nh);

@@ -40,7 +40,7 @@
 namespace tf2_ros
 {
 
-  TransformListener::TransformListener(tf2::BufferCore &buffer, lwrcl::Node* node, bool spin_thread, int32_t domain_id)
+  TransformListener::TransformListener(tf2::BufferCore &buffer, lwrcl::Node::SharedPtr node, bool spin_thread, int32_t domain_id)
       : buffer_(buffer), node_(node), spin_thread_(spin_thread), domain_id_(domain_id)
   {
     init();
@@ -50,13 +50,13 @@ namespace tf2_ros
   {
     if (spin_thread_)
     {
-      executor_->stop_spin();
+      executor_->cancel();
       dedicated_listener_thread_->join();
     }
   }
 
   void TransformListener::subscription_callback(
-      tf2_msgs::msg::TFMessage *message,
+      tf2_msgs::msg::TFMessage::SharedPtr message,
       bool is_static)
   {
 
@@ -66,23 +66,21 @@ namespace tf2_ros
       return;
     }
 
-    tf2_msgs::msg::TFMessage *msg = static_cast<tf2_msgs::msg::TFMessage *>(message);
-    const tf2_msgs::msg::TFMessage &msg_in = *msg;
     // TODO(tfoote) find a way to get the authority
     std::string authority = "Authority undetectable";
-    for (size_t i = 0u; i < msg_in.transforms().size(); i++)
+    for (size_t i = 0u; i < message->transforms().size(); i++)
     {
       try
       {
-        buffer_.setTransform(msg_in.transforms()[i], authority, is_static);
+        buffer_.setTransform(message->transforms()[i], authority, is_static);
       }
       catch (const tf2::TransformException &ex)
       {
         // /\todo Use error reporting
         std::string temp = ex.what();
         printf("Failure to set received transform from %s to %s with error: %s\n",
-               msg_in.transforms()[i].child_frame_id().c_str(),
-               msg_in.transforms()[i].header().frame_id().c_str(), temp.c_str());
+               message->transforms()[i].child_frame_id().c_str(),
+               message->transforms()[i].header().frame_id().c_str(), temp.c_str());
       }
     }
   }

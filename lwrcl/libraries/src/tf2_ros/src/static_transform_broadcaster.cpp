@@ -72,7 +72,7 @@ namespace tf2_ros
       }
     }
 
-    publisher_->publish(&net_message_);
+    publisher_->publish(net_message_);
   }
 
 } // namespace tf2_ros

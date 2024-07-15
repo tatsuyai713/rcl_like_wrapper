@@ -15,18 +15,18 @@ namespace lwrcl
   class SubscriptionCallback : public ChannelCallback
   {
   public:
-    SubscriptionCallback(std::function<void(T *)> callback_function, std::vector<std::shared_ptr<T>> *message_buffer)
+    SubscriptionCallback(std::function<void(std::shared_ptr<T>)> callback_function, std::vector<std::shared_ptr<T>> *message_buffer)
         : callback_function_(callback_function), message_buffer_(message_buffer) {}
 
     ~SubscriptionCallback() = default;
 
-    void invoke()
+    void invoke() override
     {
       try
       {
         if (!message_buffer_->empty())
         {
-          callback_function_(message_buffer_->front().get());
+          callback_function_(message_buffer_->front());
           message_buffer_->erase(message_buffer_->begin());
         }
         else
@@ -45,15 +45,15 @@ namespace lwrcl
     }
 
   private:
-    std::function<void(T *)> callback_function_;
+    std::function<void(std::shared_ptr<T>)> callback_function_;
     std::vector<std::shared_ptr<T>> *message_buffer_;
   };
 
   template <typename T>
-  class SubscriberListener : public dds::DataReaderListener
+  class SubscriptionListener : public dds::DataReaderListener
   {
   public:
-    virtual ~SubscriberListener()
+    virtual ~SubscriptionListener()
     {
     }
 
@@ -69,11 +69,11 @@ namespace lwrcl
       {
         auto data_ptr = std::make_shared<T>(temp_instance);
         message_ptr_buffer_.emplace_back(data_ptr);
-        channel_.produce(subscription_callback_.get());
+        channel_->produce(subscription_callback_.get());
       }
     }
 
-    SubscriberListener(MessageType *message_type, std::function<void(T *)> callback_function, Channel<ChannelCallback *> &channel)
+    SubscriptionListener(MessageType *message_type, std::function<void(std::shared_ptr<T>)> callback_function, Channel<ChannelCallback*>::SharedPtr channel)
         : message_type_(message_type), callback_function_(callback_function), channel_(channel)
     {
       subscription_callback_ = std::make_unique<SubscriptionCallback<T>>(callback_function_, &message_ptr_buffer_);
@@ -82,30 +82,31 @@ namespace lwrcl
 
   private:
     MessageType *message_type_;
-    std::function<void(T *)> callback_function_;
-    Channel<ChannelCallback *> &channel_;
+    std::function<void(std::shared_ptr<T>)> callback_function_;
+    Channel<ChannelCallback*>::SharedPtr channel_;
     std::vector<std::shared_ptr<T>> message_ptr_buffer_;
     std::unique_ptr<SubscriptionCallback<T>> subscription_callback_;
     dds::SampleInfo sample_info_;
   };
 
-  class ISubscriber
+  class ISubscription
   {
   public:
-    virtual ~ISubscriber() = default;
+    virtual ~ISubscription() = default;
     virtual int32_t get_publisher_count() = 0;
   };
 
   template <typename T>
-  class Subscriber : public ISubscriber
+  class Subscription : public ISubscription, public std::enable_shared_from_this<Subscription<T>>
   {
   public:
-    Subscriber(dds::DomainParticipant *participant, MessageType *message_type, const std::string &topic,
-               const dds::TopicQos &qos, std::function<void(T *)> callback_function,
-               Channel<ChannelCallback *> &channel)
+    Subscription(dds::DomainParticipant *participant, MessageType *message_type, const std::string &topic,
+               const uint16_t &depth, std::function<void(std::shared_ptr<T>)> callback_function,
+               Channel<ChannelCallback*>::SharedPtr channel)
         : participant_(participant),
           listener_(message_type, callback_function, channel)
     {
+      lwrcl::dds::TopicQos qos = lwrcl::dds::TOPIC_QOS_DEFAULT;
       if (message_type->get_type_support().register_type(participant_) != ReturnCode_t::RETCODE_OK)
       {
         throw std::runtime_error("Failed to register message type");
@@ -133,7 +134,7 @@ namespace lwrcl
       }
       dds::DataReaderQos reader_qos = dds::DATAREADER_QOS_DEFAULT;
       reader_qos.endpoint().history_memory_policy = rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
-      reader_qos.history().depth = 10;
+      reader_qos.history().depth = depth;
       reader_qos.reliability().kind = dds::RELIABLE_RELIABILITY_QOS;
       // reader_qos.durability().kind = dds::TRANSIENT_LOCAL_DURABILITY_QOS;
       reader_qos.data_sharing().automatic();
@@ -146,7 +147,7 @@ namespace lwrcl
       }
     }
 
-    ~Subscriber()
+    ~Subscription()
     {
       if (reader_ != nullptr)
       {
@@ -167,9 +168,11 @@ namespace lwrcl
       return listener_.count.load();
     }
 
+  using SharedPtr = std::shared_ptr<Subscription<T>>;
+
   private:
     dds::DomainParticipant *participant_;
-    SubscriberListener<T> listener_;
+    SubscriptionListener<T> listener_;
     dds::Topic *topic_;
     dds::Subscriber *subscriber_;
     dds::DataReader *reader_;

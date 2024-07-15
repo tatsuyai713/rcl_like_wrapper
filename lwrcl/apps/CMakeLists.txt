@@ -28,12 +28,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_subdirectory(lwrcl_example)
-add_subdirectory(CustomROSTypeDataPublisher)
 add_subdirectory(ROSTypeImagePubSub)
 add_subdirectory(ROSTypeImagePubSubEdge)
 add_subdirectory(ROSTypeImagePubSubMono)
 add_subdirectory(ROSTypeImagePubSubExecutor)
-add_subdirectory(CustomROSTypeDataPublisherExecutor)
-add_subdirectory(ROSTypeImagePubSubExecutorTest)
+# add_subdirectory(CustomROSTypeDataPublisher)
+# add_subdirectory(CustomROSTypeDataPublisherExecutor)
 
 

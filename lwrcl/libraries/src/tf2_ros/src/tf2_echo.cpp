@@ -50,15 +50,13 @@
 #include "lwrcl.hpp"
 #include <atomic>
 
-SIGNAL_HANDLER_DEFINE()
-
 class echoListener
 {
 public:
   tf2_ros::Buffer buffer_;
   std::shared_ptr<tf2_ros::TransformListener> tfl_;
 
-  explicit echoListener(lwrcl::Node* nh, std::shared_ptr<lwrcl::Clock> clock)
+  explicit echoListener(lwrcl::Node::SharedPtr nh, std::shared_ptr<lwrcl::Clock> clock)
       : buffer_(clock)
   {
     int32_t domain_id = 0;
@@ -72,7 +70,7 @@ public:
 
 int main(int argc, char **argv)
 {
-  SIGNAL_HANDLER_INIT()
+  lwrcl::init(argc, argv);
 
   double rate_hz;
   // Allow 2 or 3 command line arguments
@@ -124,11 +122,11 @@ int main(int argc, char **argv)
 
   int domain_id = 0;
 
-  lwrcl::Node nh(domain_id);
+  lwrcl::Node::SharedPtr nh = lwrcl::Node::make_shared(domain_id);
 
   std::shared_ptr<lwrcl::Clock> clock = std::make_shared<lwrcl::Clock>();
   // Instantiate a local listener
-  echoListener echoListener(&nh, clock);
+  echoListener echoListener(nh, clock);
 
   std::string source_frameid(argv[1]);
   std::string target_frameid(argv[2]);

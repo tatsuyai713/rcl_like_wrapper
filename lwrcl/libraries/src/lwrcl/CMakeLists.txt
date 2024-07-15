@@ -54,8 +54,14 @@ install(FILES
 include/lwrcl.hpp 
 include/fast_dds_header.hpp
 include/publisher.hpp 
-include/subscriber.hpp 
+include/subscription.hpp 
+include/clock_time_duration.hpp
 include/timer.hpp 
-include/channel.hpp 
-include/signal_handler.hpp 
+include/channel.hpp
 DESTINATION include/)
+
+install(FILES
+include/rclcpp/rclcpp.hpp
+include/rclcpp/qos.hpp
+DESTINATION include/rclcpp)
+

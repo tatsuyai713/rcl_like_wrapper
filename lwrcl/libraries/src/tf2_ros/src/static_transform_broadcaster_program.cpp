@@ -42,8 +42,6 @@
 
 #include "lwrcl.hpp"
 
-SIGNAL_HANDLER_DEFINE()
-
 struct Option
 {
   explicit Option(bool has_arg)
@@ -358,7 +356,7 @@ static void print_usage()
 
 int main(int argc, char ** argv)
 {
-  SIGNAL_HANDLER_INIT()
+  lwrcl::init(argc, argv);
   std::vector<std::string> args(argv + 1, argv + argc);
   
   bool help = false;
@@ -395,7 +393,7 @@ int main(int argc, char ** argv)
     rotation.x(), rotation.y(), rotation.z(), rotation.w(),
     frame_id.c_str(), child_frame_id.c_str());
 
-  node->spin();
+  lwrcl::spin(node);
 
   return 0;
 }
