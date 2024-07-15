@@ -529,6 +529,7 @@ namespace lwrcl
     publisher_list_.clear();
     subscription_list_.clear();
     timer_list_.clear();
+    get_global_registry().remove_node(this);
   }
 
   std::shared_ptr<Node> Node::make_shared(int domain_id)
