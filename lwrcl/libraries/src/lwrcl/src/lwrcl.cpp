@@ -439,7 +439,7 @@ namespace lwrcl
     participant_factory->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
 
     participant_ = std::shared_ptr<eprosima::fastdds::dds::DomainParticipant>(
-        eprosima::fastdds::dds::DomainParticipantFactory::get_instance()->create_participant(domain_id, participant_qos),
+        participant_factory->create_participant(domain_id, participant_qos),
         DomainParticipantDeleter());
     if (!participant_)
     {
@@ -472,7 +472,7 @@ namespace lwrcl
     participant_factory->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
 
     participant_ = std::shared_ptr<eprosima::fastdds::dds::DomainParticipant>(
-        eprosima::fastdds::dds::DomainParticipantFactory::get_instance()->create_participant(domain_id, participant_qos),
+        participant_factory->create_participant(domain_id, participant_qos),
         DomainParticipantDeleter());
     if (!participant_)
     {
@@ -506,7 +506,7 @@ namespace lwrcl
     participant_factory->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
 
     participant_ = std::shared_ptr<eprosima::fastdds::dds::DomainParticipant>(
-        eprosima::fastdds::dds::DomainParticipantFactory::get_instance()->create_participant(domain_id, participant_qos),
+        participant_factory->create_participant(domain_id, participant_qos),
         DomainParticipantDeleter());
     if (!participant_)
     {

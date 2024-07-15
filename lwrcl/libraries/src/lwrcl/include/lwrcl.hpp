@@ -158,7 +158,7 @@ namespace lwrcl
     std::forward_list<std::shared_ptr<IPublisher>> publisher_list_;
     std::forward_list<std::shared_ptr<ISubscription>> subscription_list_;
     std::forward_list<std::shared_ptr<ITimerBase>> timer_list_;
-    Channel<ChannelCallback*>::SharedPtr channel_;
+    Channel<ChannelCallback *>::SharedPtr channel_;
     Clock::SharedPtr clock_;
     std::string name_;
   };
@@ -181,7 +181,7 @@ namespace lwrcl
 
     private:
       std::vector<Node::SharedPtr> nodes_; // List of nodes managed by the executor.
-      std::mutex mutex_;          // Mutex for thread-safe access to the nodes list.
+      std::mutex mutex_;                   // Mutex for thread-safe access to the nodes list.
     };
 
     // Executor that manages and executes nodes, each in its own thread, allowing for parallel processing.
@@ -200,9 +200,9 @@ namespace lwrcl
       int get_number_of_threads() const;
 
     private:
-      std::vector<Node::SharedPtr> nodes_;        // List of nodes managed by the executor.
-      std::vector<std::thread> threads_; // Threads created for each node for parallel execution.
-      mutable std::mutex mutex_;                 // Mutex for thread-safe access to the nodes and threads lists.
+      std::vector<Node::SharedPtr> nodes_; // List of nodes managed by the executor.
+      std::vector<std::thread> threads_;   // Threads created for each node for parallel execution.
+      mutable std::mutex mutex_;           // Mutex for thread-safe access to the nodes and threads lists.
     };
   } // namespace executors
 
