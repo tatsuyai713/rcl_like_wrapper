@@ -1,44 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
 <dds>
-    <profiles xmlns="http://www.eprosima.com">
+    <profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles" >
         <transport_descriptors>
+            <!-- Create a custom transport descriptor -->
+            <transport_descriptor>
+                <transport_id>udpv4_transport</transport_id>
+                <type>UDPv4</type>
+                <!-- Limit communication to localhost -->
+                <interfaceWhiteList>
+                    <address>127.0.0.1</address>
+                </interfaceWhiteList>
+                <sendBufferSize>65536</sendBufferSize> <!-- ?????????? -->
+                <receiveBufferSize>65536</receiveBufferSize> <!-- ?????????? -->
+                <maxMessageSize>65500</maxMessageSize> <!-- ?????????? -->
+                <maxInitialPeersRange>100</maxInitialPeersRange> <!-- ????????? -->
+            </transport_descriptor>
             <transport_descriptor>
                 <transport_id>shm_transport</transport_id>
                 <type>SHM</type>
-                <default_reception_threads>
-                    <scheduling_policy>-1</scheduling_policy>
-                    <priority>0</priority>
-                    <affinity>0</affinity>
-                    <stack_size>-1</stack_size>
-                </default_reception_threads>
-                <reception_threads>
-                    <reception_thread port="12345">
-                        <scheduling_policy>-1</scheduling_policy>
-                        <priority>0</priority>
-                        <affinity>0</affinity>
-                        <stack_size>-1</stack_size>
-                    </reception_thread>
-                </reception_threads>
-                <dump_thread>
-                    <scheduling_policy>-1</scheduling_policy>
-                    <priority>0</priority>
-                    <affinity>0</affinity>
-                    <stack_size>-1</stack_size>
-                </dump_thread>
+                <segment_size>10485760</segment_size> <!-- 10MB????????? -->
+                <port_queue_capacity>512</port_queue_capacity> <!-- ????????? -->
+                <healthy_check_timeout_ms>1000</healthy_check_timeout_ms> <!-- ????????????????????? -->
             </transport_descriptor>
         </transport_descriptors>
-
-        <participant profile_name="SHMParticipant">
+        <participant profile_name="participant_profile" is_default_profile="true">
             <rtps>
-                <useBuiltinTransports>true</useBuiltinTransports>
+                <!-- Disable builtin transports -->
+                <useBuiltinTransports>false</useBuiltinTransports>
+                <!-- Enable custom transport -->
                 <userTransports>
-                    <transport_id>shm_transport</transport_id>
-                </userTransports>
-            </rtps>
-        </participant>
-
-        <participant profile_name="participant_profile">
-            <rtps>
-                <userTransports>
+                    <transport_id>udpv4_transport</transport_id>
                     <transport_id>shm_transport</transport_id>
                 </userTransports>
             </rtps>
