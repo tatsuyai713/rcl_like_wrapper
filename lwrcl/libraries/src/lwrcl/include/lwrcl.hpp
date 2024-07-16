@@ -82,7 +82,7 @@ namespace lwrcl
 
     template <typename T>
     std::shared_ptr<Subscription<T>> create_subscription(MessageType *message_type, const std::string &topic, const uint16_t &depth,
-                                                         std::function<void(T *)> callback_function)
+                                                         std::function<void(std::shared_ptr<T>)> callback_function)
     {
       auto subscription = std::make_shared<Subscription<T>>(participant_.get(), message_type, std::string("rt/") + topic, depth, callback_function, channel_);
       subscription_list_.push_front(subscription);
