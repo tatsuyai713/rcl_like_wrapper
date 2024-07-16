@@ -65,7 +65,7 @@ namespace lwrcl
     Logger get_logger() const;
 
     template <typename T>
-    std::shared_ptr<Publisher<T>> create_publisher(MessageType *message_type, const std::string &topic, const uint16_t &depth)
+    std::shared_ptr<Publisher<T>> create_publisher(MessageType::SharedPtr message_type, const std::string &topic, const uint16_t &depth)
     {
       auto publisher = std::make_shared<Publisher<T>>(participant_.get(), message_type, std::string("rt/") + topic, depth);
       publisher_list_.push_front(publisher);
@@ -73,7 +73,7 @@ namespace lwrcl
     }
 
     template <typename T>
-    std::shared_ptr<Publisher<T>> create_publisher(MessageType *message_type, const std::string &topic, const QoS &depth)
+    std::shared_ptr<Publisher<T>> create_publisher(MessageType::SharedPtr message_type, const std::string &topic, const QoS &depth)
     {
       auto publisher = std::make_shared<Publisher<T>>(participant_.get(), message_type, std::string("rt/") + topic, depth.get_depth());
       publisher_list_.push_front(publisher);
@@ -81,8 +81,8 @@ namespace lwrcl
     }
 
     template <typename T>
-    std::shared_ptr<Subscription<T>> create_subscription(MessageType *message_type, const std::string &topic, const uint16_t &depth,
-                                                         std::function<void(T *)> callback_function)
+    std::shared_ptr<Subscription<T>> create_subscription(MessageType::SharedPtr message_type, const std::string &topic, const uint16_t &depth,
+                                                         std::function<void(std::shared_ptr<T>)> callback_function)
     {
       auto subscription = std::make_shared<Subscription<T>>(participant_.get(), message_type, std::string("rt/") + topic, depth, callback_function, channel_);
       subscription_list_.push_front(subscription);
@@ -90,7 +90,7 @@ namespace lwrcl
     }
 
     template <typename T>
-    std::shared_ptr<Subscription<T>> create_subscription(MessageType *message_type, const std::string &topic, const QoS &depth,
+    std::shared_ptr<Subscription<T>> create_subscription(MessageType::SharedPtr message_type, const std::string &topic, const QoS &depth,
                                                          std::function<void(std::shared_ptr<T>)> callback_function)
     {
       auto subscription = std::make_shared<Subscription<T>>(participant_.get(), message_type, std::string("rt/") + topic, depth.get_depth(), callback_function, channel_);

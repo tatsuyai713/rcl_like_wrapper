@@ -64,10 +64,12 @@ namespace tf2_ros
   {
   public:
     /** \brief Node constructor */
-    StaticTransformBroadcaster(lwrcl::Node* node)
+    StaticTransformBroadcaster(lwrcl::Node::SharedPtr node)
     : node_(node)
     {
-      publisher_ = node_->create_publisher<tf2_msgs::msg::TFMessage>( &pub_message_type_, "tf_static", 10);
+      net_message_ = std::make_shared<tf2_msgs::msg::TFMessage>();
+      pub_message_type_ = std::make_shared<tf2_msgs::msg::TFMessageType>();
+      publisher_ = node_->create_publisher<tf2_msgs::msg::TFMessage>( pub_message_type_, "tf_static", 10);
     }
 
     /** \brief Send a TransformStamped message
@@ -82,10 +84,10 @@ namespace tf2_ros
 
   private:
     /// Internal reference to ros::Node
-    lwrcl::Node* node_;
+    lwrcl::Node::SharedPtr node_;
     std::shared_ptr<lwrcl::Publisher<tf2_msgs::msg::TFMessage>> publisher_;
-    tf2_msgs::msg::TFMessage net_message_;
-    tf2_msgs::msg::TFMessageType pub_message_type_;
+    std::shared_ptr<tf2_msgs::msg::TFMessage> net_message_;
+    std::shared_ptr<tf2_msgs::msg::TFMessageType> pub_message_type_;
   };
 
 } // namespace tf2_ros

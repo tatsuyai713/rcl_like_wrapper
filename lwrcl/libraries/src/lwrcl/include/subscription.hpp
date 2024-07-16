@@ -12,13 +12,13 @@
 namespace lwrcl
 {
   template <typename T>
-  class SubscriptionCallback : public ChannelCallback
+  class SubscriberCallback : public ChannelCallback
   {
   public:
-    SubscriptionCallback(std::function<void(std::shared_ptr<T>)> callback_function, std::vector<std::shared_ptr<T>> *message_buffer)
+    SubscriberCallback(std::function<void(std::shared_ptr<T>)> callback_function, std::vector<std::shared_ptr<T>> *message_buffer)
         : callback_function_(callback_function), message_buffer_(message_buffer) {}
 
-    ~SubscriptionCallback() = default;
+    ~SubscriberCallback() = default;
 
     void invoke() override
     {
@@ -50,10 +50,10 @@ namespace lwrcl
   };
 
   template <typename T>
-  class SubscriptionListener : public dds::DataReaderListener
+  class SubscriberListener : public dds::DataReaderListener
   {
   public:
-    virtual ~SubscriptionListener()
+    virtual ~SubscriberListener()
     {
     }
 
@@ -73,19 +73,19 @@ namespace lwrcl
       }
     }
 
-    SubscriptionListener(MessageType *message_type, std::function<void(std::shared_ptr<T>)> callback_function, Channel<ChannelCallback*>::SharedPtr channel)
+    SubscriberListener(MessageType::SharedPtr message_type, std::function<void(std::shared_ptr<T>)> callback_function, Channel<ChannelCallback*>::SharedPtr channel)
         : message_type_(message_type), callback_function_(callback_function), channel_(channel)
     {
-      subscription_callback_ = std::make_unique<SubscriptionCallback<T>>(callback_function_, &message_ptr_buffer_);
+      subscription_callback_ = std::make_unique<SubscriberCallback<T>>(callback_function_, &message_ptr_buffer_);
     }
     std::atomic<int32_t> count{0};
 
   private:
-    MessageType *message_type_;
+    MessageType::SharedPtr message_type_;
     std::function<void(std::shared_ptr<T>)> callback_function_;
     Channel<ChannelCallback*>::SharedPtr channel_;
     std::vector<std::shared_ptr<T>> message_ptr_buffer_;
-    std::unique_ptr<SubscriptionCallback<T>> subscription_callback_;
+    std::unique_ptr<SubscriberCallback<T>> subscription_callback_;
     dds::SampleInfo sample_info_;
   };
 
@@ -100,7 +100,7 @@ namespace lwrcl
   class Subscription : public ISubscription, public std::enable_shared_from_this<Subscription<T>>
   {
   public:
-    Subscription(dds::DomainParticipant *participant, MessageType *message_type, const std::string &topic,
+    Subscription(dds::DomainParticipant *participant, MessageType::SharedPtr message_type, const std::string &topic,
                const uint16_t &depth, std::function<void(std::shared_ptr<T>)> callback_function,
                Channel<ChannelCallback*>::SharedPtr channel)
         : participant_(participant),
@@ -172,7 +172,7 @@ namespace lwrcl
 
   private:
     dds::DomainParticipant *participant_;
-    SubscriptionListener<T> listener_;
+    SubscriberListener<T> listener_;
     dds::Topic *topic_;
     dds::Subscriber *subscriber_;
     dds::DataReader *reader_;

@@ -18,16 +18,16 @@ namespace lwrcl
   class HandlerRegistry
   {
   public:
-    std::vector<lwrcl::Node*> nodes_;
+    std::vector<lwrcl::Node *> nodes_;
     std::mutex registry_mutex;
 
-    void add_node(lwrcl::Node* node)
+    void add_node(lwrcl::Node *node)
     {
       std::lock_guard<std::mutex> lock(registry_mutex);
       nodes_.emplace_back(node);
     }
 
-    void remove_node(lwrcl::Node* node)
+    void remove_node(lwrcl::Node *node)
     {
       std::lock_guard<std::mutex> lock(registry_mutex);
       nodes_.erase(std::remove(nodes_.begin(), nodes_.end(), node), nodes_.end());

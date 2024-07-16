@@ -104,9 +104,10 @@ namespace lwrcl
         eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
   } // namespace rtps
 
-  class MessageType
+  class MessageType : public std::enable_shared_from_this<MessageType>
   {
   public:
+    using SharedPtr = std::shared_ptr<MessageType>;
     MessageType() = default;
 
     explicit MessageType(dds::TopicDataType *message_type)
@@ -131,18 +132,19 @@ namespace lwrcl
 
 } // namespace lwrcl
 
-#define FAST_DDS_DATA_TYPE(NAMESPACE0, NAMESPACE1, TYPE)            \
-  namespace NAMESPACE0                                              \
-  {                                                                 \
-    namespace NAMESPACE1                                            \
-    {                                                               \
-      class TYPE##Type : public lwrcl::MessageType, public TYPE     \
-      {                                                             \
-      public:                                                       \
-        TYPE##Type()                                                \
-            : lwrcl::MessageType(new TYPE##PubSubType()), TYPE() {} \
-      };                                                            \
-    }                                                               \
+#define FAST_DDS_DATA_TYPE(NAMESPACE0, NAMESPACE1, TYPE)                                                         \
+  namespace NAMESPACE0                                                                                           \
+  {                                                                                                              \
+    namespace NAMESPACE1                                                                                         \
+    {                                                                                                            \
+      class TYPE##Type : public lwrcl::MessageType, public TYPE, public std::enable_shared_from_this<TYPE##Type> \
+      {                                                                                                          \
+      public:                                                                                                    \
+        using SharedPtr = std::shared_ptr<TYPE##Type>;                                                           \
+        TYPE##Type()                                                                                             \
+            : lwrcl::MessageType(new TYPE##PubSubType()), TYPE() {}                                              \
+      };                                                                                                         \
+    }                                                                                                            \
   }
 
 #endif // LWRCL_FAST_DDS_HEADER_HPP_

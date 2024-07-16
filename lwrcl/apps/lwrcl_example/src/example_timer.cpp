@@ -1,14 +1,13 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 
-using namespace rclcpp;
 
 #ifndef SENSOR_MSGS_MSG_IMAGETYPE_HPP
 #define SENSOR_MSGS_MSG_IMAGETYPE_HPP
 FAST_DDS_DATA_TYPE(sensor_msgs, msg, Image)
 #endif // SENSOR_MSGS_MSG_IMAGETYPE_HPP
 
-void myCallbackFunction(sensor_msgs::msg::Image::SharedPtr message)
+void myCallbackFunction(sensor_msgs::msg::Image::SharedPtr message, rclcpp::Node::SharedPtr node)
 {
   if (message == nullptr)
   {
@@ -16,13 +15,10 @@ void myCallbackFunction(sensor_msgs::msg::Image::SharedPtr message)
     return;
   }
   // Print the received image data
-  std::cout << "Received Image data: ";
-  std::cout << "Width: " << message->width() << ", ";
-  std::cout << "Height: " << message->height() << ", ";
-  std::cout << "Encoding: " << message->encoding() << std::endl;
+  RCLCPP_WARN(node->get_logger(), "Received Image data: Width: %d, Height: %d, Encoding: %s", message->width(), message->height(), message->encoding().c_str());
 }
 
-void myTimerFunction(sensor_msgs::msg::Image::SharedPtr my_message, Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_ptr)
+void myTimerFunction(sensor_msgs::msg::Image::SharedPtr my_message, rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_ptr)
 {
   static int data_value = 0;
   if (publisher_ptr == nullptr)
@@ -52,14 +48,14 @@ int main(int argc, char *argv[])
   rclcpp::init(argc, argv);
 
   // MessageType
-  sensor_msgs::msg::ImageType sub_message_type;
-  sensor_msgs::msg::ImageType pub_message_type;
+  std::shared_ptr<sensor_msgs::msg::ImageType> sub_message_type = std::make_shared<sensor_msgs::msg::ImageType>();
+  std::shared_ptr<sensor_msgs::msg::ImageType> pub_message_type = std::make_shared<sensor_msgs::msg::ImageType>();
 
   // Create a node with domain ID 0
-  std::shared_ptr<Node> node = lwrcl::Node::make_shared("lwrcl_example");
+  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("lwrcl_example");
 
   // Create a publisher with default QoS settings
-  auto publisher_ptr = node->create_publisher<sensor_msgs::msg::Image>(&pub_message_type, "TESTTopic2", 10);
+  auto publisher_ptr = node->create_publisher<sensor_msgs::msg::Image>(pub_message_type, "TESTTopic2", 10);
   if (publisher_ptr == nullptr)
   {
     std::cerr << "Error: Failed to create a publisher." << std::endl;
@@ -67,14 +63,14 @@ int main(int argc, char *argv[])
   }
 
   // Create a subscription with default QoS settings
-  auto subscriber_ptr = node->create_subscription<sensor_msgs::msg::Image>(&sub_message_type, "TESTTopic1", 10, myCallbackFunction);
+  auto subscriber_ptr = node->create_subscription<sensor_msgs::msg::Image>(sub_message_type, "TESTTopic1", 10, std::bind(myCallbackFunction, std::placeholders::_1, node));
   if (subscriber_ptr == nullptr)
   {
     std::cerr << "Error: Failed to create a subscription." << std::endl;
     return 1;
   }
 
-  std::shared_ptr<sensor_msgs::msg::Image> pub_message = std::make_shared<sensor_msgs::msg::Image>();
+  sensor_msgs::msg::Image::SharedPtr pub_message = std::make_shared<sensor_msgs::msg::Image>();
   auto timer_ptr = node->create_wall_timer(std::chrono::milliseconds(100), [&pub_message, publisher_ptr]()
                                            { myTimerFunction(pub_message, publisher_ptr); });
 

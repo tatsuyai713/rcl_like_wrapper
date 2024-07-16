@@ -65,10 +65,11 @@ namespace tf2_ros
   {
   public:
     /** \brief Node interface constructor */
-    TransformBroadcaster(lwrcl::Node* node)
+    TransformBroadcaster(lwrcl::Node::SharedPtr node)
     : node_(node)
     {
-      publisher_ = node_->create_publisher<tf2_msgs::msg::TFMessage>(&pub_message_type_, "tf", 10);
+      pub_message_type_ = std::make_shared<tf2_msgs::msg::TFMessageType>();
+      publisher_ = node_->create_publisher<tf2_msgs::msg::TFMessage>(pub_message_type_, "tf", 10);
     }
 
     /** \brief Send a TransformStamped message
@@ -91,9 +92,9 @@ namespace tf2_ros
     void sendTransform(const std::vector<geometry_msgs::msg::TransformStamped> &transforms);
 
   private:
-    lwrcl::Node* node_;
+    lwrcl::Node::SharedPtr node_;
     std::shared_ptr<lwrcl::Publisher<tf2_msgs::msg::TFMessage>> publisher_;
-    tf2_msgs::msg::TFMessageType pub_message_type_;
+    std::shared_ptr<tf2_msgs::msg::TFMessageType> pub_message_type_;
   };
 
 } // namespace tf2_ros

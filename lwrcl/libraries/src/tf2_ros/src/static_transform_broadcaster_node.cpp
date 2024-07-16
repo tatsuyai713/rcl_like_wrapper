@@ -65,7 +65,7 @@ StaticTransformBroadcasterNode::StaticTransformBroadcasterNode(int domain_id, Tr
     throw std::runtime_error("child_frame_id cannot equal frame_id");
   }
 
-  broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(this);
+  broadcaster_ = std::make_unique<tf2_ros::StaticTransformBroadcaster>(shared_from_this());
 
   // send transform
   broadcaster_->sendTransform(tf_msg);

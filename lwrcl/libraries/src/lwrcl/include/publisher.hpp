@@ -29,7 +29,7 @@ namespace lwrcl
   class Publisher : public IPublisher, public std::enable_shared_from_this<Publisher<T>>
   {
   public:
-    Publisher(dds::DomainParticipant *participant, MessageType *message_type, const std::string &topic,
+    Publisher(dds::DomainParticipant *participant, MessageType::SharedPtr message_type, const std::string &topic,
               const uint16_t &depth)
         : participant_(participant), message_type_(message_type), topic_(nullptr), publisher_(nullptr), writer_(nullptr)
     {
@@ -111,7 +111,7 @@ namespace lwrcl
 
   private:
     dds::DomainParticipant *participant_;
-    MessageType *message_type_;
+    MessageType::SharedPtr message_type_;
     dds::Topic *topic_;
     dds::Publisher *publisher_;
     dds::DataWriter *writer_;
