@@ -20,7 +20,6 @@
 #include <iomanip>
 
 #include "fast_dds_header.hpp"
-#include "signal_handler.hpp"
 
 #include "clock_time_duration.hpp"
 #include "publisher.hpp"
