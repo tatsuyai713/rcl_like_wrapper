@@ -10,17 +10,17 @@
                 <interfaceWhiteList>
                     <address>127.0.0.1</address>
                 </interfaceWhiteList>
-                <sendBufferSize>65536</sendBufferSize> <!-- ?????????? -->
-                <receiveBufferSize>65536</receiveBufferSize> <!-- ?????????? -->
-                <maxMessageSize>65500</maxMessageSize> <!-- ?????????? -->
-                <maxInitialPeersRange>100</maxInitialPeersRange> <!-- ????????? -->
+                <sendBufferSize>65536</sendBufferSize>
+                <receiveBufferSize>65536</receiveBufferSize>
+                <maxMessageSize>65500</maxMessageSize>
+                <maxInitialPeersRange>100</maxInitialPeersRange>
             </transport_descriptor>
             <transport_descriptor>
                 <transport_id>shm_transport</transport_id>
                 <type>SHM</type>
-                <segment_size>10485760</segment_size> <!-- 10MB????????? -->
-                <port_queue_capacity>512</port_queue_capacity> <!-- ????????? -->
-                <healthy_check_timeout_ms>1000</healthy_check_timeout_ms> <!-- ????????????????????? -->
+                <segment_size>10485760</segment_size>
+                <port_queue_capacity>512</port_queue_capacity>
+                <healthy_check_timeout_ms>1000</healthy_check_timeout_ms>
             </transport_descriptor>
         </transport_descriptors>
         <participant profile_name="participant_profile" is_default_profile="true">
