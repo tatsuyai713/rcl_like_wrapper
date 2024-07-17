@@ -7,7 +7,7 @@
 
 int main(int argc, char **argv)
 {
-  lwrcl::init(argc, argv);
+  rclcpp::init(argc, argv);
   std::cout << "Starting ROSTypeImagePubSubExecutor" << std::endl;
 
   // Buffer to hold the path to the current executable
@@ -33,29 +33,29 @@ int main(int argc, char **argv)
   }
 
   // Initialize Executor
-  lwrcl::executors::MultiThreadedExecutor executor;
+  rclcpp::executors::MultiThreadedExecutor executor;
 
   // Initialize and run the ROS-like node
-  std::shared_ptr<ROSTypeImagePubSubMono> rcl_like_node1 = std::make_shared<ROSTypeImagePubSubMono>("ROSTypeImagePubSubExecutor");
+  std::shared_ptr<ROSTypeImagePubSubMono> node1 = std::make_shared<ROSTypeImagePubSubMono>("ROSTypeImagePubSubExecutor");
   configPath1 = configPath + "config/config1.yaml"; // Append the relative path of the config file
   std::cout << "Using config file at: " << configPath1 << std::endl;
 
-  if (rcl_like_node1->init_config(configPath1))
+  if (node1->init_config(configPath1))
   {
-    executor.add_node(rcl_like_node1);
+    executor.add_node(node1);
   }
   else
   {
     std::cerr << "Failed to initialize the ROSTypeImagePubSubMono." << std::endl;
     return 1;
   }
-  std::shared_ptr<ROSTypeImagePubSubEdge> rcl_like_node2 = std::make_shared<ROSTypeImagePubSubEdge>(rcl_like_node1->get_participant());
+  std::shared_ptr<ROSTypeImagePubSubEdge> node2 = std::make_shared<ROSTypeImagePubSubEdge>(node1->get_participant());
   configPath2 = configPath + "config/config2.yaml"; // Append the relative path of the config file
   std::cout << "Using config file at: " << configPath2 << std::endl;
 
-  if (rcl_like_node2->init_config(configPath2))
+  if (node2->init_config(configPath2))
   {
-    executor.add_node(rcl_like_node2);
+    executor.add_node(node2);
   }
   else
   {
@@ -66,6 +66,7 @@ int main(int argc, char **argv)
   // Wait for the ROS-like node to finish
   executor.spin();
   executor.cancel();
+  rclcpp::shutdown();
 
   return 0;
 }

@@ -3,18 +3,13 @@
 
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include "lwrcl.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include <functional>
 #include <memory>
 #include <string>
 
-using namespace lwrcl;
-
-#ifndef SENSOR_MSGS_MSG_IMAGETYPE_HPP
-#define SENSOR_MSGS_MSG_IMAGETYPE_HPP
-FAST_DDS_DATA_TYPE(sensor_msgs, msg, Image)
-#endif // SENSOR_MSGS_MSG_IMAGETYPE_HPP
+using namespace rclcpp;
 
 class ROSTypeImagePubSubEdge : public Node
 {
@@ -35,8 +30,6 @@ private:
   Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_ptr_;
   Subscription<sensor_msgs::msg::Image>::SharedPtr subscriber_ptr_;
   TimerBase::SharedPtr timer_ptr_;
-  sensor_msgs::msg::ImageType::SharedPtr pub_message_type_;
-  sensor_msgs::msg::ImageType::SharedPtr sub_message_type_;
   int counter_;
   sensor_msgs::msg::Image::SharedPtr edge_msg_;
 };

@@ -132,19 +132,7 @@ namespace lwrcl
 
 } // namespace lwrcl
 
-#define FAST_DDS_DATA_TYPE(NAMESPACE0, NAMESPACE1, TYPE)                                                         \
-  namespace NAMESPACE0                                                                                           \
-  {                                                                                                              \
-    namespace NAMESPACE1                                                                                         \
-    {                                                                                                            \
-      class TYPE##Type : public lwrcl::MessageType, public TYPE, public std::enable_shared_from_this<TYPE##Type> \
-      {                                                                                                          \
-      public:                                                                                                    \
-        using SharedPtr = std::shared_ptr<TYPE##Type>;                                                           \
-        TYPE##Type()                                                                                             \
-            : lwrcl::MessageType(new TYPE##PubSubType()), TYPE() {}                                              \
-      };                                                                                                         \
-    }                                                                                                            \
-  }
+template <typename T>
+struct ParentTypeTraits;
 
 #endif // LWRCL_FAST_DDS_HEADER_HPP_

@@ -6,24 +6,18 @@
 ROSTypeImagePubSub::ROSTypeImagePubSub(uint16_t domain_number)
     : Node(domain_number), publish_topic_name_("default_topic"), subscribe_topic_name_("default_topic"), interval_ms_(1000)
 {
-  pub_message_type_ = std::make_shared<sensor_msgs::msg::ImageType>();
-  sub_message_type_ = std::make_shared<sensor_msgs::msg::ImageType>();
   counter_ = 0;
 }
 
 ROSTypeImagePubSub::ROSTypeImagePubSub(std::string node_name)
     : Node(node_name), publish_topic_name_("default_topic"), subscribe_topic_name_("default_topic"), interval_ms_(1000)
 {
-  pub_message_type_ = std::make_shared<sensor_msgs::msg::ImageType>();
-  sub_message_type_ = std::make_shared<sensor_msgs::msg::ImageType>();
   counter_ = 0;
 }
 
 ROSTypeImagePubSub::ROSTypeImagePubSub(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
     : Node(participant), publish_topic_name_("default_topic"), subscribe_topic_name_("default_topic"), interval_ms_(1000)
 {
-  pub_message_type_ = std::make_shared<sensor_msgs::msg::ImageType>();
-  sub_message_type_ = std::make_shared<sensor_msgs::msg::ImageType>();
   counter_ = 0;
 }
 
@@ -56,7 +50,7 @@ bool ROSTypeImagePubSub::init_config(const std::string &config_file_path)
     return false;
   }
 
-  publisher_ptr_ = create_publisher<sensor_msgs::msg::Image>(pub_message_type_, publish_topic_name_, 10);
+  publisher_ptr_ = create_publisher<sensor_msgs::msg::Image>(publish_topic_name_, 10);
   if (!publisher_ptr_)
   {
     std::cerr << "Error: Failed to create a publisher." << std::endl;
@@ -64,7 +58,7 @@ bool ROSTypeImagePubSub::init_config(const std::string &config_file_path)
   }
 
   // Create a subscription with a topic named subscribe_topic_name_ and default QoS
-  subscriber_ptr_ = create_subscription<sensor_msgs::msg::Image>(sub_message_type_, subscribe_topic_name_, 10, std::bind(&ROSTypeImagePubSub::callbackSubscribe, this, std::placeholders::_1));
+  subscriber_ptr_ = create_subscription<sensor_msgs::msg::Image>(subscribe_topic_name_, 10, std::bind(&ROSTypeImagePubSub::callbackSubscribe, this, std::placeholders::_1));
   if (subscriber_ptr_ == 0)
   {
     std::cerr << "Error: Failed to create a subscription." << std::endl;

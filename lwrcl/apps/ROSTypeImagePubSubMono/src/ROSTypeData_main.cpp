@@ -6,7 +6,7 @@
 
 int main(int argc, char **argv)
 {
-  lwrcl::init(argc, argv);
+  rclcpp::init(argc, argv);
   std::cout << "Starting ROSTypeImagePubSubMono" << std::endl;
 
   // Buffer to hold the path to the current executable
@@ -31,14 +31,14 @@ int main(int argc, char **argv)
   }
 
   // Initialize and run the ROS-like node
-  std::shared_ptr<ROSTypeImagePubSubMono> rcl_like_node = std::make_shared<ROSTypeImagePubSubMono>("ROSTypeImagePubSubMono");
+  std::shared_ptr<ROSTypeImagePubSubMono> node = std::make_shared<ROSTypeImagePubSubMono>("ROSTypeImagePubSubMono");
   configPath += "config/config.yaml"; // Append the relative path of the config file
   std::cout << "Using config file at: " << configPath << std::endl;
 
-  if (rcl_like_node->init_config(configPath))
+  if (node->init_config(configPath))
   {
-    lwrcl::spin(rcl_like_node);
-    lwrcl::shutdown();
+    rclcpp::spin(node);
+    rclcpp::shutdown();
   }
   else
   {

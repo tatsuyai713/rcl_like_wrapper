@@ -5,11 +5,6 @@
 #include "rclcpp/qos.hpp"
 #include "std_msgs/msg/string.hpp"
 
-#ifndef STD_MSGS_MSG_STRINGTYPE_HPP
-#define STD_MSGS_MSG_STRINGTYPE_HPP
-FAST_DDS_DATA_TYPE(std_msgs, msg, String)
-#endif  // STD_MSGS_MSG_STRINGTYPE_HPP
-
 using namespace std::chrono_literals;
 
 using std::placeholders::_1;
@@ -19,10 +14,8 @@ class MySubscriber : public rclcpp::Node
 public:
   MySubscriber() : Node("my_subscriber")
   {
-    sub_message_type_ = std::make_shared<std_msgs::msg::StringType>();
     rclcpp::QoS qos_depth(10);
-    subscription_ = this->create_subscription<std_msgs::msg::String>(
-      sub_message_type_, "topic", qos_depth, std::bind(&MySubscriber::topic_callback, this, _1));
+    subscription_ = this->create_subscription<std_msgs::msg::String>("topic", qos_depth, std::bind(&MySubscriber::topic_callback, this, _1));
   }
 
 private:
@@ -31,7 +24,6 @@ private:
     RCLCPP_INFO(this->get_logger(), "I heard: '%s'", msg->data().c_str());
   }
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
-  std_msgs::msg::StringType::SharedPtr sub_message_type_;
 };
 
 int main(int argc, char * argv[])

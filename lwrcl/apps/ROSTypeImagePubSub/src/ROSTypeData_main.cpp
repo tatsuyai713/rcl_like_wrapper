@@ -31,14 +31,14 @@ int main(int argc, char **argv)
   }
 
   // Initialize and run the ROS-like node
-  std::shared_ptr<ROSTypeImagePubSub> rcl_like_node = std::make_shared<ROSTypeImagePubSub>(0);
+  std::shared_ptr<ROSTypeImagePubSub> node = std::make_shared<ROSTypeImagePubSub>(0);
   configPath += "config/config.yaml"; // Append the relative path of the config file
   std::cout << "Using config file at: " << configPath << std::endl;
 
-  if (rcl_like_node->init_config(configPath))
+  if (node->init_config(configPath))
   {
-    lwrcl::spin(rcl_like_node);
-    lwrcl::shutdown();
+    rclcpp::spin(node);
+    rclcpp::shutdown();
   }
   else
   {

@@ -5,8 +5,10 @@
 namespace rclcpp {
     using Clock = lwrcl::Clock;
     using Node = lwrcl::Node;
-    using SingleThreadedExecutor = lwrcl::executors::SingleThreadedExecutor;
-    using MultiThreadedExecutor = lwrcl::executors::MultiThreadedExecutor;
+    namespace executors {
+        using SingleThreadedExecutor = lwrcl::executors::SingleThreadedExecutor;
+        using MultiThreadedExecutor = lwrcl::executors::MultiThreadedExecutor;
+    }
     using Duration = lwrcl::Duration;
     using Time = lwrcl::Time;
     using Rate = lwrcl::Rate;

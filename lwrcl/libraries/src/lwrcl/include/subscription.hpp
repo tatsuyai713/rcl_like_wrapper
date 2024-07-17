@@ -73,15 +73,14 @@ namespace lwrcl
       }
     }
 
-    SubscriberListener(MessageType::SharedPtr message_type, std::function<void(std::shared_ptr<T>)> callback_function, Channel<ChannelCallback*>::SharedPtr channel)
-        : message_type_(message_type), callback_function_(callback_function), channel_(channel)
+    SubscriberListener(std::function<void(std::shared_ptr<T>)> callback_function, Channel<ChannelCallback*>::SharedPtr channel)
+        : callback_function_(callback_function), channel_(channel)
     {
       subscription_callback_ = std::make_unique<SubscriberCallback<T>>(callback_function_, &message_ptr_buffer_);
     }
     std::atomic<int32_t> count{0};
 
   private:
-    MessageType::SharedPtr message_type_;
     std::function<void(std::shared_ptr<T>)> callback_function_;
     Channel<ChannelCallback*>::SharedPtr channel_;
     std::vector<std::shared_ptr<T>> message_ptr_buffer_;
@@ -100,14 +99,15 @@ namespace lwrcl
   class Subscription : public ISubscription, public std::enable_shared_from_this<Subscription<T>>
   {
   public:
-    Subscription(dds::DomainParticipant *participant, MessageType::SharedPtr message_type, const std::string &topic,
+    Subscription(dds::DomainParticipant *participant, const std::string &topic,
                const uint16_t &depth, std::function<void(std::shared_ptr<T>)> callback_function,
                Channel<ChannelCallback*>::SharedPtr channel)
-        : participant_(participant),
-          listener_(message_type, callback_function, channel)
+        : participant_(participant), listener_(callback_function, channel), topic_(nullptr), subscriber_(nullptr), reader_(nullptr)
     {
+      using ParentType = typename ParentTypeTraits<T>::Type;
+      message_type_ = lwrcl::MessageType(new ParentType());
       lwrcl::dds::TopicQos qos = lwrcl::dds::TOPIC_QOS_DEFAULT;
-      if (message_type->get_type_support().register_type(participant_) != ReturnCode_t::RETCODE_OK)
+      if (message_type_.get_type_support().register_type(participant_) != ReturnCode_t::RETCODE_OK)
       {
         throw std::runtime_error("Failed to register message type");
       }
@@ -115,7 +115,7 @@ namespace lwrcl
       dds::Topic* retrieved_topic = dynamic_cast<eprosima::fastdds::dds::Topic*>(participant->lookup_topicdescription(topic));
       if (retrieved_topic == nullptr)
       {
-        topic_ = participant_->create_topic(topic, message_type->get_type_support().get_type_name(), qos);
+        topic_ = participant_->create_topic(topic, message_type_.get_type_support().get_type_name(), qos);
         if (!topic_)
         {
           throw std::runtime_error("Failed to create topic");
@@ -176,6 +176,7 @@ namespace lwrcl
     dds::Topic *topic_;
     dds::Subscriber *subscriber_;
     dds::DataReader *reader_;
+    MessageType message_type_;
   };
 
 } // namespace lwrcl

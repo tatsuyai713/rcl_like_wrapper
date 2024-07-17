@@ -1,18 +1,13 @@
 #ifndef ROSTYPEIMAGEPUBLSUB_H_
 #define ROSTYPEIMAGEPUBLSUB_H_
 
-#include "lwrcl.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include <functional>
 #include <memory>
 #include <string>
 
-using namespace lwrcl;
-
-#ifndef SENSOR_MSGS_MSG_IMAGETYPE_HPP
-#define SENSOR_MSGS_MSG_IMAGETYPE_HPP
-FAST_DDS_DATA_TYPE(sensor_msgs, msg, Image)
-#endif // SENSOR_MSGS_MSG_IMAGETYPE_HPP
+using namespace rclcpp;
 
 class ROSTypeImagePubSub : public Node
 {
@@ -41,8 +36,6 @@ private:
   Subscription<sensor_msgs::msg::Image>::SharedPtr subscriber_ptr_;
   TimerBase::SharedPtr timer_ptr_;
   std::function<void()> timer_callback_;
-  sensor_msgs::msg::ImageType::SharedPtr pub_message_type_;
-  sensor_msgs::msg::ImageType::SharedPtr sub_message_type_;
   int counter_;
 };
 

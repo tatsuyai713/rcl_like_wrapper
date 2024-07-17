@@ -1,11 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 
-#ifndef SENSOR_MSGS_MSG_IMAGETYPE_HPP
-#define SENSOR_MSGS_MSG_IMAGETYPE_HPP
-FAST_DDS_DATA_TYPE(sensor_msgs, msg, Image)
-#endif // SENSOR_MSGS_MSG_IMAGETYPE_HPP
-
 // Callback function for handling received messages
 void myCallbackFunction(sensor_msgs::msg::Image::SharedPtr message)
 {
@@ -25,15 +20,11 @@ int main(int argc, char *argv[])
 {
   rclcpp::init(argc, argv);
 
-  // MessageType
-  std::shared_ptr<sensor_msgs::msg::ImageType> sub_message_type = std::make_shared<sensor_msgs::msg::ImageType>();
-  std::shared_ptr<sensor_msgs::msg::ImageType> pub_message_type = std::make_shared<sensor_msgs::msg::ImageType>();
-
   // Create a node with domain ID 0
   std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("lwrcl_example");
 
   // Create a publisher with default QoS settings
-  auto publisher_ptr = node->create_publisher<sensor_msgs::msg::Image>(pub_message_type, "TESTTopic1", 10);
+  auto publisher_ptr = node->create_publisher<sensor_msgs::msg::Image>("TESTTopic1", 10);
   if (publisher_ptr == nullptr)
   {
     std::cerr << "Error: Failed to create a publisher." << std::endl;
@@ -41,7 +32,7 @@ int main(int argc, char *argv[])
   }
 
   // Create a subscription with default QoS settings
-  auto subscriber_ptr = node->create_subscription<sensor_msgs::msg::Image>(sub_message_type, "TESTTopic2", 10, myCallbackFunction);
+  auto subscriber_ptr = node->create_subscription<sensor_msgs::msg::Image>("TESTTopic2", 10, myCallbackFunction);
   if (subscriber_ptr == nullptr)
   {
     std::cerr << "Error: Failed to create a subscription." << std::endl;
