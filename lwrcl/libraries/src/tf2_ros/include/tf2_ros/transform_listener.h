@@ -37,18 +37,12 @@
 #include <thread>
 #include <utility>
 
+#include "lwrcl.hpp"
 #include "tf2/buffer_core.h"
 #include "tf2/time.h"
 #include "tf2_ros/visibility_control.h"
 
-#include "tf2_msgs/msg/TFMessage.h"
-#include "tf2_msgs/msg/TFMessagePubSubTypes.h"
-#include "lwrcl.hpp"
-
-#ifndef TF2_MSGS_MSG_TFMESSAGE_
-#define TF2_MSGS_MSG_TFMESSAGE_
-FAST_DDS_DATA_TYPE(tf2_msgs, msg, TFMessage)
-#endif
+#include "tf2_msgs/msg/tf_message.hpp"
 
 namespace tf2_ros
 {
@@ -72,8 +66,6 @@ namespace tf2_ros
   private:
     void init()
     {
-      sub_tf_message_type_ = std::make_shared<tf2_msgs::msg::TFMessageType>();
-      sub_tf_static_message_type_ = std::make_shared<tf2_msgs::msg::TFMessageType>();
       
       auto cb = std::bind(
           &TransformListener::subscription_callback, this, std::placeholders::_1, false);
@@ -84,16 +76,16 @@ namespace tf2_ros
       {
         tf_listener_node_ = std::make_shared<TFListenerNode>(domain_id_);
         executor_ = std::make_shared<lwrcl::executors::SingleThreadedExecutor>();
-        message_subscription_tf_ = tf_listener_node_->create_subscription<tf2_msgs::msg::TFMessage>(sub_tf_message_type_, "tf", 10, std::move(cb));
-        message_subscription_tf_static_ = tf_listener_node_->create_subscription<tf2_msgs::msg::TFMessage>(sub_tf_static_message_type_, "tf_static", 10, std::move(static_cb));
+        message_subscription_tf_ = tf_listener_node_->create_subscription<tf2_msgs::msg::TFMessage>("tf", 10, std::move(cb));
+        message_subscription_tf_static_ = tf_listener_node_->create_subscription<tf2_msgs::msg::TFMessage>("tf_static", 10, std::move(static_cb));
         executor_->add_node(tf_listener_node_);
         dedicated_listener_thread_ = std::make_unique<std::thread>([&]()
                                                                    { executor_->spin(); });
       }
       else
       {
-        message_subscription_tf_ = node_->create_subscription<tf2_msgs::msg::TFMessage>(sub_tf_message_type_, "tf", 10, std::move(cb));
-        message_subscription_tf_static_ = node_->create_subscription<tf2_msgs::msg::TFMessage>(sub_tf_static_message_type_, "tf_static", 10, std::move(static_cb));
+        message_subscription_tf_ = node_->create_subscription<tf2_msgs::msg::TFMessage>("tf", 10, std::move(cb));
+        message_subscription_tf_static_ = node_->create_subscription<tf2_msgs::msg::TFMessage>("tf_static", 10, std::move(static_cb));
         
       }
     }
@@ -110,8 +102,6 @@ namespace tf2_ros
     std::shared_ptr<lwrcl::executors::SingleThreadedExecutor> executor_;
     std::shared_ptr<lwrcl::Subscription<tf2_msgs::msg::TFMessage>> message_subscription_tf_{0};
     std::shared_ptr<lwrcl::Subscription<tf2_msgs::msg::TFMessage>> message_subscription_tf_static_{0};
-    std::shared_ptr<tf2_msgs::msg::TFMessageType> sub_tf_message_type_;
-    std::shared_ptr<tf2_msgs::msg::TFMessageType> sub_tf_static_message_type_;
   };
 } // namespace tf2_ros
 

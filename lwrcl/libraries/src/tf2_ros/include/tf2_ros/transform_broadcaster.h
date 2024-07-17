@@ -38,21 +38,8 @@
 #include "tf2_ros/visibility_control.h"
 
 #include "lwrcl.hpp"
-#include "geometry_msgs/msg/TransformStamped.h"
-#include "geometry_msgs/msg/TransformStampedPubSubTypes.h"
-#include "tf2_msgs/msg/TFMessage.h"
-#include "tf2_msgs/msg/TFMessagePubSubTypes.h"
-
-
-#ifndef GEOMETRY_MSGS_MSG_TRANSFORMSTAMPED_
-#define GEOMETRY_MSGS_MSG_TRANSFORMSTAMPED_
-FAST_DDS_DATA_TYPE(geometry_msgs, msg, TransformStamped)
-#endif
-
-#ifndef TF2_MSGS_MSG_TFMESSAGE_
-#define TF2_MSGS_MSG_TFMESSAGE_
-FAST_DDS_DATA_TYPE(tf2_msgs, msg, TFMessage)
-#endif
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "tf2_msgs/msg/tf_message.hpp"
 
 namespace tf2_ros
 {
@@ -68,8 +55,7 @@ namespace tf2_ros
     TransformBroadcaster(lwrcl::Node::SharedPtr node)
     : node_(node)
     {
-      pub_message_type_ = std::make_shared<tf2_msgs::msg::TFMessageType>();
-      publisher_ = node_->create_publisher<tf2_msgs::msg::TFMessage>(pub_message_type_, "tf", 10);
+      publisher_ = node_->create_publisher<tf2_msgs::msg::TFMessage>("tf", 10);
     }
 
     /** \brief Send a TransformStamped message
@@ -94,7 +80,6 @@ namespace tf2_ros
   private:
     lwrcl::Node::SharedPtr node_;
     std::shared_ptr<lwrcl::Publisher<tf2_msgs::msg::TFMessage>> publisher_;
-    std::shared_ptr<tf2_msgs::msg::TFMessageType> pub_message_type_;
   };
 
 } // namespace tf2_ros

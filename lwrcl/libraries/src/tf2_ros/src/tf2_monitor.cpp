@@ -64,8 +64,6 @@ public:
   std::shared_ptr<TFListenerNode> node_;
   std::shared_ptr<lwrcl::Subscription<tf2_msgs::msg::TFMessage>> subscriber_tf_;
   std::shared_ptr<lwrcl::Subscription<tf2_msgs::msg::TFMessage>> subscriber_tf_static_;
-  std::shared_ptr<tf2_msgs::msg::TFMessageType> sub_tf_message_type_;
-  std::shared_ptr<tf2_msgs::msg::TFMessageType> sub_tf_static_message_type_;
   std::vector<std::string> chain_;
   std::map<std::string, std::string> frame_authority_map;
   std::map<std::string, std::vector<double>> delay_map;
@@ -152,9 +150,6 @@ public:
 
     tf_ = std::make_shared<tf2_ros::TransformListener>(*buffer_, this->node_, true, 0);
 
-    sub_tf_message_type_ = std::make_shared<tf2_msgs::msg::TFMessageType>();
-    sub_tf_static_message_type_ = std::make_shared<tf2_msgs::msg::TFMessageType>();
-
     if (using_specific_chain_) {
       std::string warning_msg;
       while (!buffer_->canTransform(
@@ -176,9 +171,9 @@ public:
       }
     }
 
-    subscriber_tf_ = node_->create_subscription<tf2_msgs::msg::TFMessage>(sub_tf_message_type_, "tf", 10,
+    subscriber_tf_ = node_->create_subscription<tf2_msgs::msg::TFMessage>("tf", 10,
       std::bind(&TFMonitor::callback, this, std::placeholders::_1));
-    subscriber_tf_static_ = node_->create_subscription<tf2_msgs::msg::TFMessage>(sub_tf_static_message_type_, "tf_static", 10,
+    subscriber_tf_static_ = node_->create_subscription<tf2_msgs::msg::TFMessage>("tf_static", 10,
       std::bind(&TFMonitor::callback, this, std::placeholders::_1));
   }
 
