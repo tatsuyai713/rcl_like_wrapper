@@ -35,8 +35,8 @@ private:
   Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_ptr_;
   Subscription<sensor_msgs::msg::Image>::SharedPtr subscriber_ptr_;
   TimerBase::SharedPtr timer_ptr_;
-  sensor_msgs::msg::ImageType pub_message_type_;
-  sensor_msgs::msg::ImageType sub_message_type_;
+  sensor_msgs::msg::ImageType::SharedPtr pub_message_type_;
+  sensor_msgs::msg::ImageType::SharedPtr sub_message_type_;
   int counter_;
   sensor_msgs::msg::Image::SharedPtr gray_msg_;
 };

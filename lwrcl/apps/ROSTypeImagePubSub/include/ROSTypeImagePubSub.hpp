@@ -18,6 +18,8 @@ class ROSTypeImagePubSub : public Node
 {
 public:
   ROSTypeImagePubSub(uint16_t domain_number);
+  ROSTypeImagePubSub(std::string node_name);
+  ROSTypeImagePubSub(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
   virtual ~ROSTypeImagePubSub();
 
   // Override init and run methods from Node
@@ -39,8 +41,8 @@ private:
   Subscription<sensor_msgs::msg::Image>::SharedPtr subscriber_ptr_;
   TimerBase::SharedPtr timer_ptr_;
   std::function<void()> timer_callback_;
-  sensor_msgs::msg::ImageType pub_message_type_;
-  sensor_msgs::msg::ImageType sub_message_type_;
+  sensor_msgs::msg::ImageType::SharedPtr pub_message_type_;
+  sensor_msgs::msg::ImageType::SharedPtr sub_message_type_;
   int counter_;
 };
 
