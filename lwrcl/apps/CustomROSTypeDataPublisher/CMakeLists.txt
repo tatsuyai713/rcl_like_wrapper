@@ -42,7 +42,7 @@ if (NOT Original_I${Original_IDL_Files}DL_Files)
     foreach(idl_file ${Original_IDL_Files})
         get_filename_component(idl ${idl_file} NAME_WE)
         get_filename_component(idl_dir "${idl_file}" PATH)
-        set(workingdir ${CMAKE_CURRENT_BINARY_DIR})
+        set(workingdir ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/msg)
         configure_file(${idl_file} ${workingdir}/${idl}.idl COPYONLY)
         execute_process(COMMAND fastddsgen ${idl}.idl -I ${ROS_DATA_TYPES_INCLUDE_PATH} -I ${idl_dir} -typeros2 -replace -cs
         WORKING_DIRECTORY ${workingdir}
@@ -60,6 +60,17 @@ file(GLOB ROS_TYPE_DATA_PUBLISHER_SOURCES_CXX "src/*.cxx")
 file(GLOB ROS_TYPE_DATA_PUBLISHER_SOURCES_CPP "src/*.cpp")
 
 
+add_custom_command(
+    OUTPUT update_headers_done
+    COMMAND ${CMAKE_COMMAND} -E echo "Running update_headers.sh"
+    COMMAND ${CMAKE_COMMAND} -E env bash /opt/fast-dds-libs/bin/update_headers.sh
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Updating header files"
+    VERBATIM
+)
+add_custom_target(Custom_Message_CompileIDLFiles ALL
+    DEPENDS update_headers_done)
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config/config.yaml ${CMAKE_CURRENT_BINARY_DIR}/config/config.yaml  COPYONLY)
 
 include_directories(
@@ -68,7 +79,11 @@ include_directories(
     ${ROS_DATA_TYPES_INCLUDE_PATH})
 add_executable(CustomROSTypeDataPublisher ${ROS_TYPE_DATA_PUBLISHER_SOURCES_CXX} ${ROS_TYPE_DATA_PUBLISHER_SOURCES_CPP} ${in1_files})
 
+add_dependencies(CustomROSTypeDataPublisher Custom_Message_CompileIDLFiles)
+
 target_link_libraries(CustomROSTypeDataPublisher fastrtps fastcdr lwrcl geometry_msgs sensor_msgs yaml-cpp)
+
+set_target_properties(CustomROSTypeDataPublisher PROPERTIES OUTPUT_NAME "CustomROSTypeDataPublisherExecutable")
 install(TARGETS CustomROSTypeDataPublisher
     RUNTIME DESTINATION bin/CustomROSTypeDataPublisher/${BIN_INSTALL_DIR})
 install(FILES config/config.yaml DESTINATION bin/CustomROSTypeDataPublisher/${BIN_INSTALL_DIR}/config PERMISSIONS OWNER_READ GROUP_READ WORLD_READ)

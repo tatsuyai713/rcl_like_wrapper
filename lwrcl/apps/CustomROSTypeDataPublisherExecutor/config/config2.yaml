@@ -1,4 +1,0 @@
-config:
-  topics:
-    - name: "pose_topic2"
-      interval_ms: 100
