@@ -380,7 +380,7 @@ namespace lwrcl
 
   Node::Node(int domain_id) : clock_(std::make_unique<Clock>()), channel_(std::make_shared<Channel<ChannelCallback *>>())
   {
-    name_ = "lwrcl_node"; // Default node name
+    name_ = "lwrcl_default_node"; // Default node name
     dds::DomainParticipantQos participant_qos = dds::PARTICIPANT_QOS_DEFAULT;
 
     // Create a descriptor for the new transport.
@@ -481,6 +481,16 @@ namespace lwrcl
 
   Node::Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant) : clock_(std::make_unique<Clock>()), participant_(participant), channel_(std::make_shared<Channel<ChannelCallback *>>())
   {
+    name_ = "lwrcl_default_node"; // Default node name
+    if (!participant_)
+    {
+      throw std::runtime_error("Failed to create domain participant");
+    }
+    closed_ = 0;
+  }
+
+  Node::Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string  &name) : clock_(std::make_unique<Clock>()), participant_(participant), name_(name), channel_(std::make_shared<Channel<ChannelCallback *>>())
+  {
     if (!participant_)
     {
       throw std::runtime_error("Failed to create domain participant");
@@ -514,6 +524,11 @@ namespace lwrcl
   std::shared_ptr<Node> Node::make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
   {
     auto node = std::shared_ptr<Node>(new Node(participant));
+    return node;
+  }
+  std::shared_ptr<Node> Node::make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant , const std::string &name)
+  {
+    auto node = std::shared_ptr<Node>(new Node(participant, name));
     return node;
   }
 

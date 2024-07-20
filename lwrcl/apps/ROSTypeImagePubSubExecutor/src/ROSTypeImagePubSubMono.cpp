@@ -11,7 +11,7 @@ ROSTypeImagePubSubMono::ROSTypeImagePubSubMono(uint16_t domain_number)
   gray_msg_ = std::make_shared<sensor_msgs::msg::Image>();
 }
 
-ROSTypeImagePubSubMono::ROSTypeImagePubSubMono(std::string node_name)
+ROSTypeImagePubSubMono::ROSTypeImagePubSubMono(const std::string &node_name)
     : Node(node_name), publish_topic_name_("default_topic"), subscribe_topic_name_("default_topic"), interval_ms_(1000)
 {
   counter_ = 0;
@@ -21,6 +21,14 @@ ROSTypeImagePubSubMono::ROSTypeImagePubSubMono(std::string node_name)
 
 ROSTypeImagePubSubMono::ROSTypeImagePubSubMono(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
     : Node(participant), publish_topic_name_("default_topic"), subscribe_topic_name_("default_topic"), interval_ms_(1000)
+{
+  counter_ = 0;
+
+  gray_msg_ = std::make_shared<sensor_msgs::msg::Image>();
+}
+
+ROSTypeImagePubSubMono::ROSTypeImagePubSubMono(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &node_name)
+    : Node(participant, node_name), publish_topic_name_("default_topic"), subscribe_topic_name_("default_topic"), interval_ms_(1000)
 {
   counter_ = 0;
 

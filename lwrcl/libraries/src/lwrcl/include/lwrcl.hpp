@@ -122,6 +122,7 @@ namespace lwrcl
     static std::shared_ptr<Node> make_shared(int domain_id, const std::string &name);
     static std::shared_ptr<Node> make_shared(const std::string &name);
     static std::shared_ptr<Node> make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
+    static std::shared_ptr<Node> make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name);
 
     friend void lwrcl::spin(std::shared_ptr<Node> node);
     friend void lwrcl::spin_some(std::shared_ptr<Node> node);
@@ -130,6 +131,7 @@ namespace lwrcl
     virtual Clock::SharedPtr get_clock();
 
     Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
+    Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name);
     virtual ~Node();
 
     int closed_;

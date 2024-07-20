@@ -15,8 +15,9 @@ class ROSTypeImagePubSubEdge : public Node
 {
 public:
   ROSTypeImagePubSubEdge(uint16_t domain_number);
-  ROSTypeImagePubSubEdge(std::string node_name);
+  ROSTypeImagePubSubEdge(const std::string &node_name);
   ROSTypeImagePubSubEdge(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
+  ROSTypeImagePubSubEdge(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &node_name);
   virtual ~ROSTypeImagePubSubEdge();
 
   bool init_config(const std::string &config_file_path);

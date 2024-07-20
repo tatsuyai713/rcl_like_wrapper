@@ -15,8 +15,9 @@ class ROSTypeImagePubSubMono : public Node
 {
 public:
   ROSTypeImagePubSubMono(uint16_t domain_number);
-  ROSTypeImagePubSubMono(std::string node_name);
+  ROSTypeImagePubSubMono(const std::string &node_name);
   ROSTypeImagePubSubMono(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
+  ROSTypeImagePubSubMono(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &node_name);
   virtual ~ROSTypeImagePubSubMono();
 
   bool init_config(const std::string &config_file_path);
