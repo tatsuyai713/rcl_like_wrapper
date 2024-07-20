@@ -1,40 +1,49 @@
 #ifndef LWRCL_FAST_DDS_HEADER_HPP_
 #define LWRCL_FAST_DDS_HEADER_HPP_
-
 #include <unordered_map>
+#include <iostream>
+#include <vector>
+#include <functional>
+#include <atomic>
+#include <cstddef>
+#include <memory>
+#include <string>
+#include <thread>
 
+// Fast DDS includes
+#include <fastdds/dds/core/LoanableSequence.hpp>
+#include <fastdds/dds/core/condition/StatusCondition.hpp>
+#include <fastdds/dds/core/condition/WaitSet.hpp>
+#include <fastdds/dds/core/policy/QosPolicies.hpp>
+#include <fastdds/dds/core/status/PublicationMatchedStatus.hpp>
+#include <fastdds/dds/core/status/StatusMask.hpp>
+#include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
 #include <fastdds/dds/domain/DomainParticipant.hpp>
 #include <fastdds/dds/domain/DomainParticipantFactory.hpp>
 #include <fastdds/dds/domain/qos/DomainParticipantQos.hpp>
-#include <fastdds/rtps/transport/shared_mem/SharedMemTransportDescriptor.h>
-
-#include <fastdds/dds/subscriber/DataReader.hpp>
-#include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
 #include <fastdds/dds/publisher/DataWriter.hpp>
 #include <fastdds/dds/publisher/DataWriterListener.hpp>
-#include <fastdds/dds/publisher/qos/DataWriterQos.hpp>
 #include <fastdds/dds/publisher/Publisher.hpp>
+#include <fastdds/dds/publisher/qos/DataWriterQos.hpp>
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
-#include <fastdds/dds/core/status/PublicationMatchedStatus.hpp>
-#include <fastdds/dds/subscriber/Subscriber.hpp>
-#include <fastdds/dds/subscriber/qos/SubscriberQos.hpp>
-#include <fastdds/dds/core/status/SubscriptionMatchedStatus.hpp>
-
+#include <fastdds/dds/subscriber/DataReader.hpp>
+#include <fastdds/dds/subscriber/DataReaderListener.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
-#include <fastdds/dds/core/policy/QosPolicies.hpp>
-#include <fastdds/dds/core/status/StatusMask.hpp>
-
-#include <fastdds/dds/topic/TypeSupport.hpp>
+#include <fastdds/dds/subscriber/Subscriber.hpp>
+#include <fastdds/dds/subscriber/qos/DataReaderQos.hpp>
+#include <fastdds/dds/subscriber/qos/SubscriberQos.hpp>
 #include <fastdds/dds/topic/Topic.hpp>
 #include <fastdds/dds/topic/TopicDataType.hpp>
 #include <fastdds/dds/topic/TopicDescription.hpp>
+#include <fastdds/dds/topic/TypeSupport.hpp>
 #include <fastdds/dds/topic/qos/TopicQos.hpp>
-#include <fastrtps/types/TypesBase.h>
-
+#include <fastrtps/rtps/attributes/WriterAttributes.h>
+#include <fastrtps/rtps/common/Guid.h>
+#include <fastrtps/rtps/common/Time_t.h>
 #include <fastrtps/transport/UDPv4TransportDescriptor.h>
 #include <fastrtps/transport/UDPv6TransportDescriptor.h>
-
-#include <unordered_map>
+#include <fastdds/rtps/transport/shared_mem/SharedMemTransportDescriptor.h>
+#include <fastrtps/types/TypesBase.h>
 
 namespace lwrcl
 {

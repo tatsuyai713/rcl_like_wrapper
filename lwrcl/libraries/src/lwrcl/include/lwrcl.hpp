@@ -132,6 +132,8 @@ namespace lwrcl
     Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
     virtual ~Node();
 
+    int closed_;
+
   private:
     virtual void spin();
     virtual void spin_some();

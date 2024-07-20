@@ -15,49 +15,7 @@ namespace lwrcl
 {
   class Node;
 
-  class HandlerRegistry
-  {
-  public:
-    std::vector<lwrcl::Node *> nodes_;
-    std::mutex registry_mutex;
-
-    void add_node(lwrcl::Node *node)
-    {
-      std::lock_guard<std::mutex> lock(registry_mutex);
-      nodes_.emplace_back(node);
-    }
-
-    void remove_node(lwrcl::Node *node)
-    {
-      std::lock_guard<std::mutex> lock(registry_mutex);
-      nodes_.erase(std::remove(nodes_.begin(), nodes_.end(), node), nodes_.end());
-    }
-
-    void notify_all()
-    {
-      std::lock_guard<std::mutex> lock(registry_mutex);
-      for (auto node : nodes_)
-      {
-        if (node)
-        {
-          node->shutdown();
-        }
-        else
-        {
-          std::cerr << "node pointer is invalid!" << std::endl;
-        }
-      }
-    }
-  };
-
-  static HandlerRegistry &get_global_registry()
-  {
-    static HandlerRegistry global_registry;
-    return global_registry;
-  }
-
-  // Global flag to control the stopping of the application, e.g., in response to SIGINT
-  std::atomic_bool global_stop_flag{false};
+  std::atomic<bool> global_stop_flag(false);
 
   // Function to handle SIGINT signals for graceful application termination
   void lwrcl_signal_handler(int signal)
@@ -65,8 +23,7 @@ namespace lwrcl
     if (signal == SIGINT || signal == SIGTERM)
     {
       printf("SIGINT/SIGTERM received, shutting down...\n");
-      global_stop_flag = true;
-      get_global_registry().notify_all();
+      global_stop_flag.store(true);
     }
   }
 
@@ -166,7 +123,7 @@ namespace lwrcl
       std::lock_guard<std::mutex> lock(mutex_);
       if (node != nullptr)
       {
-        nodes_.push_back(node);
+        nodes_.emplace_back(node);
       }
       else
       {
@@ -188,31 +145,37 @@ namespace lwrcl
       std::lock_guard<std::mutex> lock(mutex_);
       for (auto &node : nodes_)
       {
-        if (node)
+        if(node != nullptr)
         {
-          node->shutdown();
-        }
-        else
-        {
-          std::cerr << "node pointer is invalid!" << std::endl;
+          if (node->closed_ == 0)
+          {
+            node->shutdown();
+          }
         }
       }
+      nodes_.clear();
     }
 
     void SingleThreadedExecutor::spin()
     {
-      while (!global_stop_flag.load())
+      bool exit_flag = false;
+      while (global_stop_flag.load() == false && exit_flag == false)
       {
         std::lock_guard<std::mutex> lock(mutex_);
         for (auto node : nodes_)
         {
-          if (node)
+          if(node != nullptr)
           {
-            lwrcl::spin_some(node);
-          }
-          else
+            if (node->closed_ == 0)
+            {
+              lwrcl::spin_some(node);
+            }else
+            {
+              exit_flag = true;
+            }
+          }else
           {
-            std::cerr << "node pointer is invalid!" << std::endl;
+            exit_flag = true;
           }
         }
         std::this_thread::sleep_for(std::chrono::microseconds(10));
@@ -224,13 +187,12 @@ namespace lwrcl
       std::lock_guard<std::mutex> lock(mutex_);
       for (auto node : nodes_)
       {
-        if (node)
+        if(node != nullptr)
         {
+          if (node->closed_ == 0)
+          {
           lwrcl::spin_some(node);
-        }
-        else
-        {
-          std::cerr << "node pointer is invalid!" << std::endl;
+          }
         }
       }
     }
@@ -247,7 +209,7 @@ namespace lwrcl
       std::lock_guard<std::mutex> lock(mutex_);
       if (node != nullptr)
       {
-        nodes_.push_back(node);
+        nodes_.emplace_back(node);
       }
       else
       {
@@ -269,14 +231,39 @@ namespace lwrcl
       std::lock_guard<std::mutex> lock(mutex_);
       for (auto node : nodes_)
       {
-        if (node)
+        if(node != nullptr)
         {
-          node->shutdown();
+          if (node->closed_ == 0)
+          {
+            node->shutdown();
+          }
         }
         else
         {
           std::cerr << "node pointer is invalid!" << std::endl;
         }
+      }
+      nodes_.clear();
+    }
+
+    void MultiThreadedExecutor::spin()
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      for (auto node : nodes_)
+      {
+        threads_.emplace_back([this, node]()
+                              {
+            if(node != nullptr)
+            {
+              if (node->closed_ == 0)
+              {
+                  lwrcl::spin(node);
+              }
+            }
+            else
+            {
+                std::cerr << "node pointer is invalid!" << std::endl;
+            } });
       }
 
       for (auto &thread : threads_)
@@ -289,40 +276,17 @@ namespace lwrcl
       threads_.clear();
     }
 
-    void MultiThreadedExecutor::spin()
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      for (auto node : nodes_)
-      {
-        threads_.emplace_back([this, node]()
-                              {
-          if (!node)
-          {
-            std::cerr << "node pointer is invalid!" << std::endl;
-          }
-          else
-          {
-            lwrcl::spin(node);
-          } });
-      }
-
-      for (auto &thread : threads_)
-      {
-        if (thread.joinable())
-        {
-          thread.join();
-        }
-      }
-    }
-
     void MultiThreadedExecutor::spin_some()
     {
       std::lock_guard<std::mutex> lock(mutex_);
       for (auto node : nodes_)
       {
-        if (node)
+        if(node != nullptr)
         {
+          if (node->closed_ == 0)
+          {
           lwrcl::spin_some(node);
+          }
         }
         else
         {
@@ -426,7 +390,7 @@ namespace lwrcl
     udp_transport->non_blocking_send = true;
 
     // Link the Transport Layer to the Participant.
-    participant_qos.transport().user_transports.push_back(udp_transport);
+    participant_qos.transport().user_transports.emplace_back(udp_transport);
 
     // Increase the sending buffer size
     participant_qos.transport().send_socket_buffer_size = 4194304;
@@ -445,7 +409,7 @@ namespace lwrcl
     {
       throw std::runtime_error("Failed to create domain participant");
     }
-    get_global_registry().add_node(this);
+    closed_ = 0;
   }
 
   Node::Node(int domain_id, const std::string &name) : clock_(std::make_unique<Clock>()), name_(name), channel_(std::make_shared<Channel<ChannelCallback *>>())
@@ -459,7 +423,7 @@ namespace lwrcl
     udp_transport->non_blocking_send = true;
 
     // Link the Transport Layer to the Participant.
-    participant_qos.transport().user_transports.push_back(udp_transport);
+    participant_qos.transport().user_transports.emplace_back(udp_transport);
 
     // Increase the sending buffer size
     participant_qos.transport().send_socket_buffer_size = 4194304;
@@ -478,7 +442,7 @@ namespace lwrcl
     {
       throw std::runtime_error("Failed to create domain participant");
     }
-    get_global_registry().add_node(this);
+    closed_ = 0;
   }
 
   Node::Node(const std::string &name) : clock_(std::make_unique<Clock>()), name_(name), channel_(std::make_shared<Channel<ChannelCallback *>>())
@@ -493,7 +457,7 @@ namespace lwrcl
     udp_transport->non_blocking_send = true;
 
     // Link the Transport Layer to the Participant.
-    participant_qos.transport().user_transports.push_back(udp_transport);
+    participant_qos.transport().user_transports.emplace_back(udp_transport);
 
     // Increase the sending buffer size
     participant_qos.transport().send_socket_buffer_size = 4194304;
@@ -512,7 +476,7 @@ namespace lwrcl
     {
       throw std::runtime_error("Failed to create domain participant");
     }
-    get_global_registry().add_node(this);
+    closed_ = 0;
   }
 
   Node::Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant) : clock_(std::make_unique<Clock>()), participant_(participant), channel_(std::make_shared<Channel<ChannelCallback *>>())
@@ -521,39 +485,31 @@ namespace lwrcl
     {
       throw std::runtime_error("Failed to create domain participant");
     }
-    get_global_registry().add_node(this);
+    closed_ = 0;
   }
 
   Node::~Node()
   {
-    publisher_list_.clear();
-    subscription_list_.clear();
-    timer_list_.clear();
-    get_global_registry().remove_node(this);
   }
 
   std::shared_ptr<Node> Node::make_shared(int domain_id)
   {
     auto node = std::shared_ptr<Node>(new Node(domain_id));
-    get_global_registry().add_node(node.get());
     return node;
   }
   std::shared_ptr<Node> Node::make_shared(int domain_id, const std::string &name)
   {
     auto node = std::shared_ptr<Node>(new Node(domain_id, name));
-    get_global_registry().add_node(node.get());
     return node;
   }
   std::shared_ptr<Node> Node::make_shared(const std::string &name)
   {
     auto node = std::shared_ptr<Node>(new Node(name));
-    get_global_registry().add_node(node.get());
     return node;
   }
   std::shared_ptr<Node> Node::make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
   {
     auto node = std::shared_ptr<Node>(new Node(participant));
-    get_global_registry().add_node(node.get());
     return node;
   }
 
@@ -574,7 +530,7 @@ namespace lwrcl
 
   void Node::spin()
   {
-    while (!channel_->is_closed() && !global_stop_flag.load())
+    while (closed_ == 0 && global_stop_flag.load() == false)
     {
       ChannelCallback *callback;
       while (channel_->consume(callback))
@@ -583,10 +539,12 @@ namespace lwrcl
         {
           callback->invoke();
         }
+        else
+        {
+          break;
+        }
       }
     }
-    printf("Node shutting down...\n");
-    channel_->close();
   }
 
   void Node::spin_some()
@@ -608,7 +566,14 @@ namespace lwrcl
 
   void Node::shutdown()
   {
-    channel_->close();
+    publisher_list_.clear();
+    for (auto &subscriber : subscription_list_)
+    {
+      std::static_pointer_cast<ISubscription>(subscriber)->stop();
+    }
+    subscription_list_.clear();
+    timer_list_.clear();
+    closed_ = 1;
   }
 
   Clock::SharedPtr Node::get_clock()
@@ -629,14 +594,24 @@ namespace lwrcl
 
   bool ok()
   {
-    return !global_stop_flag.load();
+    if (!global_stop_flag.load())
+    {
+      return true;
+    }
+    else
+    {
+      return false;
+    }
   }
 
   void spin(std::shared_ptr<Node> node)
   {
-    if (node)
+    if (node != nullptr)
     {
-      node->spin();
+      if(node->closed_ == 0)
+      {
+        node->spin();
+      }
     }
     else
     {
@@ -646,9 +621,12 @@ namespace lwrcl
 
   void spin_some(std::shared_ptr<Node> node)
   {
-    if (node)
+    if (node != nullptr)
     {
-      node->spin_some();
+      if(node->closed_ == 0)
+      {
+        node->spin_some();
+      }
     }
     else
     {
@@ -670,8 +648,7 @@ namespace lwrcl
 
   void shutdown()
   {
-    global_stop_flag = true;
-    get_global_registry().notify_all();
+    global_stop_flag.store(true);
   }
 
   void sleep_for(const lwrcl::Duration &duration)

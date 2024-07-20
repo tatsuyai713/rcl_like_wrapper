@@ -35,14 +35,14 @@ namespace lwrcl
     bool consume(T &x)
     {
       std::unique_lock<std::mutex> lock{mtx_};
-      cv_.wait(lock, [this]
-               { return !queue_.empty() || closed_; });
+      // cv_.wait(lock, [this]
+      //          { return !queue_.empty() || closed_; });
       
-      // if (!cv_.wait_for(lock, std::chrono::milliseconds(1000), [this]
-      //                   { return !queue_.empty() || closed_; }))
-      // {
-      //   return false;
-      // }
+      if (!cv_.wait_for(lock, std::chrono::milliseconds(100), [this]
+                        { return !queue_.empty() || closed_; }))
+      {
+        return false;
+      }
 
       if (closed_ && queue_.empty())
       {
