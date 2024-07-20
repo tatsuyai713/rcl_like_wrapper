@@ -20,7 +20,7 @@ namespace lwrcl
   // Function to handle SIGINT signals for graceful application termination
   void lwrcl_signal_handler(int signal)
   {
-    if (signal == SIGINT || signal == SIGTERM)
+    if ((signal == SIGINT || signal == SIGTERM) && global_stop_flag.load() == false)
     {
       printf("SIGINT/SIGTERM received, shutting down...\n");
       global_stop_flag.store(true);
@@ -490,6 +490,10 @@ namespace lwrcl
 
   Node::~Node()
   {
+    if(closed_ == 0)
+    {
+      this->shutdown();
+    }
   }
 
   std::shared_ptr<Node> Node::make_shared(int domain_id)
@@ -533,7 +537,7 @@ namespace lwrcl
     while (closed_ == 0 && global_stop_flag.load() == false)
     {
       ChannelCallback *callback;
-      while (channel_->consume(callback))
+      while (channel_->consume(callback) && global_stop_flag.load() == false)
       {
         if (callback)
         {
@@ -566,12 +570,17 @@ namespace lwrcl
 
   void Node::shutdown()
   {
+    printf("Shutting down %s node...\n", name_.c_str());
     publisher_list_.clear();
     for (auto &subscriber : subscription_list_)
     {
       std::static_pointer_cast<ISubscription>(subscriber)->stop();
     }
     subscription_list_.clear();
+    for (auto &timer : timer_list_)
+    {
+      std::static_pointer_cast<TimerBase>(timer)->stop();
+    }
     timer_list_.clear();
     closed_ = 1;
   }
