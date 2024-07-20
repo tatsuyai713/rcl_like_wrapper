@@ -14,8 +14,9 @@ class ROSTypeDataPublisher : public Node
 {
 public:
   ROSTypeDataPublisher(uint16_t domain_number);
-  ROSTypeDataPublisher(std::string node_name);
+  ROSTypeDataPublisher(const std::string &node_name);
   ROSTypeDataPublisher(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
+  ROSTypeDataPublisher(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &node_name);
   virtual ~ROSTypeDataPublisher();
 
   // Override init and run methods from Node
