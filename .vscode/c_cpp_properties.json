@@ -5,6 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/usr/include/**",
+                "/usr/local/include/**",
                 "/opt/fast-dds/include/**",
                 "/opt/fast-dds-libs/include/**"
             ],

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(libraries)
+project(data_types)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -39,8 +39,4 @@ else()
     link_directories(/opt/fast-dds-libs/lib)
 endif()
 
-add_subdirectory(src/lwrcl)
-add_subdirectory(src/tf2)
-add_subdirectory(src/tf2_ros)
-add_subdirectory(src/domain_participant_counter)
-add_subdirectory(src/yaml-cpp)
+add_subdirectory(src/ros-data-types-for-fastdds)

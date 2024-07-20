@@ -94,7 +94,12 @@
         "ios": "cpp",
         "locale": "cpp",
         "queue": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "expected": "cpp",
+        "format": "cpp",
+        "scoped_allocator": "cpp",
+        "span": "cpp",
+        "stdfloat": "cpp"
     },
     "ros.distro": "humble",
     "[cpp]": { // C++ファイルに適用する設定

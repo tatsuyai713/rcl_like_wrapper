@@ -40,23 +40,6 @@ cd scripts
 source ~/.bashrc
 ```
 
-### Build and Install ROS Compatible Libraries
-
-Build and install libraries for ROS compatibility (yaml-cpp, ROS data types, tf2):
-
-```
-cd ../fastdds_ws
-./build_libraries.sh install
-```
-
-### Build Sample Applications
-
-Compile the sample applications:
-
-```
-./build_apps.sh
-```
-
 ### Build and Install RCL Like Wrapper
 
 Build and install the lwrcl for enhanced ROS 2 compatibility:
