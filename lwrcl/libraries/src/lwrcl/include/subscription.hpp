@@ -123,18 +123,34 @@ namespace lwrcl
 
                 while (reader_->take_next_sample(&data_, &info_) == ReturnCode_t::RETCODE_OK)
                 {
-                  if (info_.valid_data)
-                  {
-                    auto data_ptr = std::make_shared<T>(data_);
-                    message_ptr_buffer_.emplace_back(data_ptr);
-                    channel_->produce(subscription_callback_.get());
-                  }
-                  else
-                  {
-                    std::cerr << "Error: Invalid data" << std::endl;
-                    break;
-                  }
+                    if (info_.valid_data)
+                    {
+                        // copy
+                        auto data_ptr = std::shared_ptr<T>(new T(data_), [](T* ptr) { delete ptr; });
+                        message_ptr_buffer_.emplace_back(data_ptr);
+                        channel_->produce(subscription_callback_.get());
+                    }
+                    else
+                    {
+                        std::cerr << "Error: Invalid data" << std::endl;
+                        break;
+                    }
                 }
+                // while (reader_->read_next_sample(&data_, &info_) == ReturnCode_t::RETCODE_OK)
+                // {
+                //     if (info_.valid_data)
+                //     {
+                //         // Zero copy
+                //         auto data_ptr = std::shared_ptr<T>(&data_, [](T*) {});
+                //         message_ptr_buffer_.emplace_back(data_ptr);
+                //         channel_->produce(subscription_callback_.get());
+                //     }
+                //     else
+                //     {
+                //         std::cerr << "Error: Invalid data" << std::endl;
+                //         break;
+                //     }
+                // }
               }
             }
           }

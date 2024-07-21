@@ -508,27 +508,27 @@ namespace lwrcl
 
   std::shared_ptr<Node> Node::make_shared(int domain_id)
   {
-    auto node = std::shared_ptr<Node>(new Node(domain_id));
+    auto node = std::shared_ptr<Node>(new Node(domain_id), [](Node *node) { delete node; });
     return node;
   }
   std::shared_ptr<Node> Node::make_shared(int domain_id, const std::string &name)
   {
-    auto node = std::shared_ptr<Node>(new Node(domain_id, name));
+    auto node = std::shared_ptr<Node>(new Node(domain_id, name), [](Node *node) { delete node; });
     return node;
   }
   std::shared_ptr<Node> Node::make_shared(const std::string &name)
   {
-    auto node = std::shared_ptr<Node>(new Node(name));
+    auto node = std::shared_ptr<Node>(new Node(name), [](Node *node) { delete node; });
     return node;
   }
   std::shared_ptr<Node> Node::make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
   {
-    auto node = std::shared_ptr<Node>(new Node(participant));
+    auto node = std::shared_ptr<Node>(new Node(participant), [](Node *node) { delete node; });
     return node;
   }
   std::shared_ptr<Node> Node::make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant , const std::string &name)
   {
-    auto node = std::shared_ptr<Node>(new Node(participant, name));
+    auto node = std::shared_ptr<Node>(new Node(participant, name), [](Node *node) { delete node; });
     return node;
   }
 
