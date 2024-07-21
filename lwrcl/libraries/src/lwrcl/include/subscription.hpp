@@ -206,6 +206,7 @@ namespace lwrcl
       reader_qos.history().depth = depth;
       reader_qos.reliability().kind = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS;
       reader_qos.data_sharing().automatic();
+      reader_qos.properties().properties().emplace_back("fastdds.intraprocess_delivery", "true");
       reader_ = subscriber_->create_datareader(topic_, reader_qos, nullptr);
       if (!reader_)
       {

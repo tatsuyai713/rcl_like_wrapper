@@ -71,6 +71,7 @@ namespace lwrcl
       // writer_qos.durability().kind = dds::TRANSIENT_LOCAL_DURABILITY_QOS;
       writer_qos.data_sharing().automatic();
       // writer_qos.data_sharing().on("shared_directory");
+      writer_qos.properties().properties().emplace_back("fastdds.intraprocess_delivery", "true");
       writer_ = publisher_->create_datawriter(topic_, writer_qos, &listener_);
       if (!writer_)
       {

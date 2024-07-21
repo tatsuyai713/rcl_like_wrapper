@@ -23,14 +23,16 @@ add_executable(example_spin src/example_spin.cpp)
 add_executable(example_timer src/example_timer.cpp)
 add_executable(example_class_pub src/example_class_pub.cpp)
 add_executable(example_class_sub src/example_class_sub.cpp)
+add_executable(example_class_pubsub_executor src/example_class_pubsub_executor.cpp)
 
 target_link_libraries(example_spin PRIVATE fastrtps std_msgs sensor_msgs lwrcl)
 target_link_libraries(example_timer PRIVATE fastrtps std_msgs sensor_msgs lwrcl)
 target_link_libraries(example_class_pub PRIVATE fastrtps std_msgs sensor_msgs lwrcl)
 target_link_libraries(example_class_sub PRIVATE fastrtps std_msgs sensor_msgs lwrcl)
+target_link_libraries(example_class_pubsub_executor PRIVATE fastrtps std_msgs sensor_msgs lwrcl)
 
 # Install targets
-install(TARGETS example_spin example_timer example_class_pub example_class_sub
+install(TARGETS example_spin example_timer example_class_pub example_class_sub example_class_pubsub_executor
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin)
 
