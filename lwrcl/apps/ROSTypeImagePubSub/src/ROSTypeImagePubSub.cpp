@@ -7,54 +7,53 @@ ROSTypeImagePubSub::ROSTypeImagePubSub(uint16_t domain_number)
     : Node(domain_number), publish_topic_name_("default_topic"), subscribe_topic_name_("default_topic"), interval_ms_(1000)
 {
   counter_ = 0;
+  init();
 }
 
 ROSTypeImagePubSub::ROSTypeImagePubSub(std::string node_name)
     : Node(node_name), publish_topic_name_("default_topic"), subscribe_topic_name_("default_topic"), interval_ms_(1000)
 {
   counter_ = 0;
+  init();
 }
 
 ROSTypeImagePubSub::ROSTypeImagePubSub(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
     : Node(participant), publish_topic_name_("default_topic"), subscribe_topic_name_("default_topic"), interval_ms_(1000)
 {
   counter_ = 0;
+  init();
 }
 
 ROSTypeImagePubSub::~ROSTypeImagePubSub()
 {
 }
 
-bool ROSTypeImagePubSub::init_config(const std::string &config_file_path)
+void ROSTypeImagePubSub::init()
 {
-  // Load configuration from YAML file
-  YAML::Node node = YAML::LoadFile(config_file_path);
-  YAML::Node config = node["config"];
+  this->declare_parameter("publish_topic_name", std::string("default_topic_pub"));
+  this->declare_parameter("publish_topic_interval_ms", 100);
+  this->declare_parameter("subscribe_topic_name", std::string("default_topic_sub"));
+  this->declare_parameter("subscribe_topic_interval_ms", 100);
 
-  for (const auto &topic_node : config["publish_topics"])
-  {
-    publish_topic_name_ = topic_node["name"].as<std::string>("default_topic");
-    interval_ms_ = topic_node["interval_ms"].as<uint16_t>(1000);
-    std::cout << "Topic name: " << publish_topic_name_ << ", Interval: " << interval_ms_ << " ms" << std::endl;
-  }
-
-  for (const auto &topic_node : config["subscribe_topics"])
-  {
-    subscribe_topic_name_ = topic_node["name"].as<std::string>("default_topic");
-    std::cout << "Topic name: " << subscribe_topic_name_ << std::endl;
-  }
+  publish_topic_name_ = this->get_parameter<std::string>("publish_topic_name");
+  interval_ms_ = this->get_parameter<uint16_t>("publish_topic_interval_ms");
+  subscribe_topic_name_ = this->get_parameter<std::string>("subscribe_topic_name");
+  
+  std::cout << "publish_topic_name: " << publish_topic_name_ << std::endl;
+  std::cout << "interval_ms: " << interval_ms_ << std::endl;
+  std::cout << "subscribe_topic_name: " << subscribe_topic_name_ << std::endl;
 
   if (interval_ms_ <= 0)
   {
     std::cerr << "Interval Time Error!" << std::endl;
-    return false;
+    return;
   }
 
   publisher_ptr_ = create_publisher<sensor_msgs::msg::Image>(publish_topic_name_, 10);
   if (!publisher_ptr_)
   {
     std::cerr << "Error: Failed to create a publisher." << std::endl;
-    return false;
+    return;
   }
 
   // Create a subscription with a topic named subscribe_topic_name_ and default QoS
@@ -62,7 +61,7 @@ bool ROSTypeImagePubSub::init_config(const std::string &config_file_path)
   if (subscriber_ptr_ == 0)
   {
     std::cerr << "Error: Failed to create a subscription." << std::endl;
-    return false;
+    return;
   }
 
   int test = 100;
@@ -74,10 +73,10 @@ bool ROSTypeImagePubSub::init_config(const std::string &config_file_path)
   if (!timer_ptr_)
   {
     std::cerr << "Error: Failed to create a timer." << std::endl;
-    return false;
+    return;
   }
 
-  return true;
+  return;
 }
 
 void ROSTypeImagePubSub::callbackPublish(int test)

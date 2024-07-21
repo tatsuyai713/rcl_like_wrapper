@@ -20,11 +20,11 @@ public:
   ROSTypeImagePubSubEdge(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &node_name);
   virtual ~ROSTypeImagePubSubEdge();
 
-  bool init_config(const std::string &config_file_path);
   // Callback function to subscribe data
   void callbackSubscribe(sensor_msgs::msg::Image::SharedPtr message);
 
 private:
+  void init();
   std::string publish_topic_name_;
   std::string subscribe_topic_name_;
   uint16_t interval_ms_;

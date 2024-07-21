@@ -1,7 +1,5 @@
-config:
-  publish_topics:
-    - name: "edge_out"
-      interval_ms: 100
-  subscribe_topics:
-    - name: "mono_out"
-      interval_ms: 100
+ROSTypeImagePubSubEdge:
+  ros__parameters:
+    publish_topic_name: "edge_out"
+    publish_topic_interval_ms: 100
+    subscribe_topic_name: "mono_out"

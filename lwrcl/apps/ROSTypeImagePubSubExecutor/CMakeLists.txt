@@ -61,8 +61,7 @@ file(GLOB ROS_TYPE_DATA_PUBLISHER_SOURCES_CXX "src/*.cxx")
 file(GLOB ROS_TYPE_DATA_PUBLISHER_SOURCES_CPP "src/*.cpp")
 
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config/config1.yaml ${CMAKE_CURRENT_BINARY_DIR}/config/config1.yaml  COPYONLY)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config/config2.yaml ${CMAKE_CURRENT_BINARY_DIR}/config/config2.yaml  COPYONLY)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config/config.yaml ${CMAKE_CURRENT_BINARY_DIR}/config/config.yaml  COPYONLY)
 
 
 include_directories(

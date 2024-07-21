@@ -42,7 +42,7 @@ endif()
 add_library(${PROJECT_NAME} SHARED src/${PROJECT_NAME}.cpp)
 target_include_directories(${PROJECT_NAME} PUBLIC include ${ROS_DATA_TYPES_INCLUDE_PATH})
 
-target_link_libraries(${PROJECT_NAME} fastrtps)
+target_link_libraries(${PROJECT_NAME} fastrtps yaml-cpp)
 
 # Install targets
 install(TARGETS ${PROJECT_NAME}

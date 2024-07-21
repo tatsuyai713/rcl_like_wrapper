@@ -20,7 +20,7 @@ public:
   // Override init and run methods from Node
   // void run() override;
 
-  bool init_config(const std::string &config_file_path);
+  void init();
 
   // Callback function to publish data
   void callbackPublish(int test);

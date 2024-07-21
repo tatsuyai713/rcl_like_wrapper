@@ -1,7 +1,0 @@
-config:
-  publish_topics:
-    - name: "edge_out"
-      interval_ms: 100
-  subscribe_topics:
-    - name: "mono_out"
-      interval_ms: 100

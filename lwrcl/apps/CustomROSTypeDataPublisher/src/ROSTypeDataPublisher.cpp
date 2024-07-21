@@ -1,56 +1,58 @@
 #include "ROSTypeDataPublisher.hpp"
 #include <iostream>
 #include <chrono>
-#include <yaml-cpp/yaml.h>
 
 ROSTypeDataPublisher::ROSTypeDataPublisher(uint16_t domain_number)
     : Node(domain_number), topic_name_("default_topic"), interval_ms_(1000)
 {
+  init();
 }
 
 ROSTypeDataPublisher::ROSTypeDataPublisher(const std::string &node_name)
     : Node(node_name), topic_name_("default_topic"), interval_ms_(1000)
 {
+  init();
 }
 
 ROSTypeDataPublisher::ROSTypeDataPublisher(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
     : Node(participant), topic_name_("default_topic"), interval_ms_(1000)
 {
+  init();
 }
 
 ROSTypeDataPublisher::ROSTypeDataPublisher(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &node_name)
     : Node(participant, node_name), topic_name_("default_topic"), interval_ms_(1000)
 {
+  init();
 }
 
 ROSTypeDataPublisher::~ROSTypeDataPublisher()
 {
+  init();
 }
 
-bool ROSTypeDataPublisher::init_config(const std::string &config_file_path)
+void ROSTypeDataPublisher::init()
 {
-  // Load configuration from YAML file
-  YAML::Node node = YAML::LoadFile(config_file_path);
-  YAML::Node config = node["config"];
+  this->declare_parameter("publish_topic_name", std::string("default_topic_pub"));
+  this->declare_parameter("publish_topic_interval_ms", 100);
 
-  for (const auto &topic_node : config["topics"])
-  {
-    topic_name_ = topic_node["name"].as<std::string>("default_topic");
-    interval_ms_ = topic_node["interval_ms"].as<uint16_t>(1000);
-    std::cout << "Topic name: " << topic_name_ << ", Interval: " << interval_ms_ << " ms" << std::endl;
-  }
+  topic_name_ = this->get_parameter<std::string>("publish_topic_name");
+  interval_ms_ = this->get_parameter<uint16_t>("publish_topic_interval_ms");
+  
+  std::cout << "publish_topic_name: " << topic_name_ << std::endl;
+  std::cout << "interval_ms: " << interval_ms_ << std::endl;
 
   if (interval_ms_ <= 0)
   {
     std::cerr << "Interval Time Error!" << std::endl;
-    return false;
+    return;
   }
 
   publisher_ptr_ = create_publisher<CustomROSTypeDataPublisher::msg::CustomMessage>(topic_name_, 10);
   if (!publisher_ptr_)
   {
     std::cerr << "Error: Failed to create a publisher." << std::endl;
-    return false;
+    return;
   }
 
   int test = 100;
@@ -62,10 +64,10 @@ bool ROSTypeDataPublisher::init_config(const std::string &config_file_path)
   if (!timer_ptr_)
   {
     std::cerr << "Error: Failed to create a timer." << std::endl;
-    return false;
+    return;
   }
 
-  return true;
+  return;
 }
 
 void ROSTypeDataPublisher::callbackPublish(int test)

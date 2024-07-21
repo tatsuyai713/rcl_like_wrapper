@@ -55,6 +55,12 @@ namespace lwrcl
     uint16_t depth_;
   };
 
+  typedef std::string ParameterValue;
+  typedef std::unordered_map<std::string, ParameterValue> Parameters;
+  typedef std::unordered_map<std::string, Parameters> NodeParameters;
+
+  extern NodeParameters node_parameters;
+
   class Node : public std::enable_shared_from_this<Node>
   {
   public:
@@ -134,6 +140,57 @@ namespace lwrcl
     Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name);
     virtual ~Node();
 
+    // Declare and get parameter methods
+    template <typename T>
+    class Parameter
+    {
+    public:
+      Parameter(const T &value) : value_(value) {}
+      T get_value() const { return value_; }
+
+    private:
+      T value_;
+    };
+
+    template <typename T>
+    void declare_parameter(const std::string &name, const T &default_value)
+    {
+      std::string node_name = this->get_name();
+
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        const Parameters &params = node_it->second;
+        auto param_it = params.find(name);
+        if (param_it != params.end())
+        {
+          std::string param_value = param_it->second;
+          std::istringstream iss(param_value);
+          T converted_value;
+          iss >> converted_value;
+          parameters_[name] = std::make_shared<Parameter<T>>(converted_value);
+          return;
+        }
+      }
+
+      parameters_[name] = std::make_shared<Parameter<T>>(default_value);
+    }
+
+    template <typename T>
+    T get_parameter(const std::string &name) const
+    {
+      auto it = parameters_.find(name);
+      if (it != parameters_.end())
+      {
+        std::shared_ptr<Parameter<T>> param = std::static_pointer_cast<Parameter<T>>(it->second);
+        return param->get_value();
+      }
+      else
+      {
+        throw std::runtime_error("Parameter not found");
+      }
+    }
+
     int closed_;
 
   private:
@@ -146,6 +203,9 @@ namespace lwrcl
     Node(const std::string &name);
 
   private:
+    std::map<std::string, std::shared_ptr<void>> parameters_;
+
+  private:
     struct DomainParticipantDeleter
     {
       void operator()(eprosima::fastdds::dds::DomainParticipant *participant) const
@@ -156,6 +216,9 @@ namespace lwrcl
         }
       }
     };
+
+    std::string get_params_file_path(int argc, char *argv[]);
+    void loadParameters(const std::string &file_path);
 
     std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant_;
     std::forward_list<std::shared_ptr<IPublisher>> publisher_list_;

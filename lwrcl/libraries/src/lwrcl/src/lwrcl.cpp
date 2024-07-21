@@ -9,6 +9,10 @@
 #include <memory>
 #include <chrono>
 #include <vector>
+#include <stdexcept>
+#include <fstream>
+#include <unordered_map>
+#include <yaml-cpp/yaml.h>
 #include "lwrcl.hpp" // The main header file for the lwrcl namespace
 
 namespace lwrcl
@@ -145,7 +149,7 @@ namespace lwrcl
       std::lock_guard<std::mutex> lock(mutex_);
       for (auto &node : nodes_)
       {
-        if(node != nullptr)
+        if (node != nullptr)
         {
           if (node->closed_ == 0)
           {
@@ -164,16 +168,18 @@ namespace lwrcl
         std::lock_guard<std::mutex> lock(mutex_);
         for (auto node : nodes_)
         {
-          if(node != nullptr)
+          if (node != nullptr)
           {
             if (node->closed_ == 0)
             {
               lwrcl::spin_some(node);
-            }else
+            }
+            else
             {
               exit_flag = true;
             }
-          }else
+          }
+          else
           {
             exit_flag = true;
           }
@@ -187,11 +193,11 @@ namespace lwrcl
       std::lock_guard<std::mutex> lock(mutex_);
       for (auto node : nodes_)
       {
-        if(node != nullptr)
+        if (node != nullptr)
         {
           if (node->closed_ == 0)
           {
-          lwrcl::spin_some(node);
+            lwrcl::spin_some(node);
           }
         }
       }
@@ -231,7 +237,7 @@ namespace lwrcl
       std::lock_guard<std::mutex> lock(mutex_);
       for (auto node : nodes_)
       {
-        if(node != nullptr)
+        if (node != nullptr)
         {
           if (node->closed_ == 0)
           {
@@ -281,11 +287,11 @@ namespace lwrcl
       std::lock_guard<std::mutex> lock(mutex_);
       for (auto node : nodes_)
       {
-        if(node != nullptr)
+        if (node != nullptr)
         {
           if (node->closed_ == 0)
           {
-          lwrcl::spin_some(node);
+            lwrcl::spin_some(node);
           }
         }
         else
@@ -489,7 +495,7 @@ namespace lwrcl
     closed_ = 0;
   }
 
-  Node::Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string  &name) : clock_(std::make_unique<Clock>()), participant_(participant), name_(name), channel_(std::make_shared<Channel<ChannelCallback *>>())
+  Node::Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name) : clock_(std::make_unique<Clock>()), participant_(participant), name_(name), channel_(std::make_shared<Channel<ChannelCallback *>>())
   {
     if (!participant_)
     {
@@ -500,7 +506,7 @@ namespace lwrcl
 
   Node::~Node()
   {
-    if(closed_ == 0)
+    if (closed_ == 0)
     {
       this->shutdown();
     }
@@ -508,27 +514,32 @@ namespace lwrcl
 
   std::shared_ptr<Node> Node::make_shared(int domain_id)
   {
-    auto node = std::shared_ptr<Node>(new Node(domain_id), [](Node *node) { delete node; });
+    auto node = std::shared_ptr<Node>(new Node(domain_id), [](Node *node)
+                                      { delete node; });
     return node;
   }
   std::shared_ptr<Node> Node::make_shared(int domain_id, const std::string &name)
   {
-    auto node = std::shared_ptr<Node>(new Node(domain_id, name), [](Node *node) { delete node; });
+    auto node = std::shared_ptr<Node>(new Node(domain_id, name), [](Node *node)
+                                      { delete node; });
     return node;
   }
   std::shared_ptr<Node> Node::make_shared(const std::string &name)
   {
-    auto node = std::shared_ptr<Node>(new Node(name), [](Node *node) { delete node; });
+    auto node = std::shared_ptr<Node>(new Node(name), [](Node *node)
+                                      { delete node; });
     return node;
   }
   std::shared_ptr<Node> Node::make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
   {
-    auto node = std::shared_ptr<Node>(new Node(participant), [](Node *node) { delete node; });
+    auto node = std::shared_ptr<Node>(new Node(participant), [](Node *node)
+                                      { delete node; });
     return node;
   }
-  std::shared_ptr<Node> Node::make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant , const std::string &name)
+  std::shared_ptr<Node> Node::make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name)
   {
-    auto node = std::shared_ptr<Node>(new Node(participant, name), [](Node *node) { delete node; });
+    auto node = std::shared_ptr<Node>(new Node(participant, name), [](Node *node)
+                                      { delete node; });
     return node;
   }
 
@@ -632,7 +643,7 @@ namespace lwrcl
   {
     if (node != nullptr)
     {
-      if(node->closed_ == 0)
+      if (node->closed_ == 0)
       {
         node->spin();
       }
@@ -647,7 +658,7 @@ namespace lwrcl
   {
     if (node != nullptr)
     {
-      if(node->closed_ == 0)
+      if (node->closed_ == 0)
       {
         node->spin_some();
       }
@@ -658,15 +669,89 @@ namespace lwrcl
     }
   }
 
+  std::string get_params_file_path(int argc, char *argv[])
+  {
+    if (argc < 2)
+    {
+      return "";
+    }
+
+    bool found_ros_args = false;
+
+    for (int i = 1; i < argc; ++i)
+    {
+      if (std::string(argv[i]) == "--ros-args")
+      {
+        found_ros_args = true;
+      }
+      else if (found_ros_args && std::string(argv[i]) == "--param-file")
+      {
+        if (i + 1 < argc)
+        {
+          return std::string(argv[i + 1]);
+        }
+        else
+        {
+          return "";
+        }
+      }
+    }
+
+    return "";
+  }
+
+  NodeParameters node_parameters;
+
+  void loadParameters(const std::string &file_path)
+  {
+    YAML::Node config = YAML::LoadFile(file_path);
+
+    for (YAML::const_iterator it = config.begin(); it != config.end(); ++it)
+    {
+      std::string node_name = it->first.as<std::string>();
+      YAML::Node parameters = it->second["ros__parameters"];
+
+      Parameters params;
+      for (YAML::const_iterator param_it = parameters.begin(); param_it != parameters.end(); ++param_it)
+      {
+        std::string param_name = param_it->first.as<std::string>();
+        auto param_value = param_it->second;
+
+        if (param_value.IsScalar())
+        {
+          params[param_name] = param_value.as<std::string>();
+        }
+      }
+      node_parameters[node_name] = params;
+    }
+  }
+
   void init(int argc, char *argv[])
   {
-    // Do nothing;
-    (void)argc;
-    (void)argv;
-
     if (std::signal(SIGINT, lwrcl_signal_handler) == SIG_ERR || std::signal(SIGTERM, lwrcl_signal_handler) == SIG_ERR)
     {
       throw std::runtime_error("Failed to set signal handler.");
+    }
+
+    try
+    {
+      std::string params_file_path = get_params_file_path(argc, argv);
+
+      if (!params_file_path.empty())
+      {
+        std::cout << "Loading parameters from file: " << params_file_path << std::endl;
+        loadParameters(params_file_path);
+      }
+    }
+    catch (const YAML::Exception &e)
+    {
+      std::cerr << "Error parsing YAML file: " << e.what() << std::endl;
+      return;
+    }
+    catch (const std::exception &e)
+    {
+      std::cerr << e.what() << std::endl;
+      return;
     }
   }
 
