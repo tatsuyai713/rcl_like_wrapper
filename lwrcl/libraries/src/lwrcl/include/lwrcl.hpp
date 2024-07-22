@@ -61,12 +61,12 @@ namespace lwrcl
 
     // Constructor for int
     Parameter(const std::string &name, int value) : name_(name), type_(Type::INT) {
-        string_value_ = std::to_string(value);
+        string_value_ = int_to_string(value);
     }
 
     // Constructor for double
     Parameter(const std::string &name, double value) : name_(name), type_(Type::DOUBLE) {
-        string_value_ = std::to_string(value);
+        string_value_ = double_to_string(value);
     }
 
     // Constructor for std::string
@@ -77,6 +77,36 @@ namespace lwrcl
     // Constructor for const char*
     Parameter(const std::string &name, const char* value) : name_(name), type_(Type::STRING) {
         string_value_ = value;
+    }
+
+  // Constructor for bool array
+    Parameter(const std::string &name, const std::vector<bool> &value) : name_(name), type_(Type::BOOL_ARRAY) {
+        string_value_ = vector_to_string(value);
+    }
+
+    // Constructor for int array
+    Parameter(const std::string &name, const std::vector<int> &value) : name_(name), type_(Type::INT_ARRAY) {
+        string_value_ = vector_to_string(value);
+    }
+
+    // Constructor for double array
+    Parameter(const std::string &name, const std::vector<double> &value) : name_(name), type_(Type::DOUBLE_ARRAY) {
+        string_value_ = vector_to_string(value);
+    }
+
+    // Constructor for std::string array
+    Parameter(const std::string &name, const std::vector<std::string> &value) : name_(name), type_(Type::STRING_ARRAY) {
+        string_value_ = vector_to_string(value);
+    }
+
+    // Constructor for const char* array
+    Parameter(const std::string &name, std::vector<const char*> &value) : name_(name), type_(Type::STRING_ARRAY) {
+        string_value_ = vector_to_string(value);
+    }
+
+    // Constructor for Byte array
+    Parameter(const std::string &name, const std::vector<uint8_t> &value) : name_(name), type_(Type::BYTE_ARRAY) {
+        string_value_ = vector_to_string(value);
     }
 
     Parameter() : type_(Type::UNKNOWN) {}
@@ -121,6 +151,52 @@ namespace lwrcl
       return string_value_;
     }
 
+
+    std::vector<bool> as_bool_array() const
+    {
+      if (type_ != Type::BOOL_ARRAY)
+      {
+        throw std::runtime_error("Parameter is not a bool array");
+      }
+      return string_to_vector<bool>(string_value_);
+    }
+
+    std::vector<int> as_integer_array() const
+    {
+      if (type_ != Type::INT_ARRAY)
+      {
+        throw std::runtime_error("Parameter is not an int array");
+      }
+      return string_to_vector<int>(string_value_);
+    }
+
+    std::vector<double> as_double_array() const
+    {
+      if (type_ != Type::DOUBLE_ARRAY)
+      {
+        throw std::runtime_error("Parameter is not a double array");
+      }
+      return string_to_vector<double>(string_value_);
+    }
+
+    std::vector<std::string> as_string_array() const
+    {
+      if (type_ != Type::STRING_ARRAY)
+      {
+        throw std::runtime_error("Parameter is not a string array");
+      }
+      return string_to_vector<std::string>(string_value_);
+    }
+
+    std::vector<uint8_t> as_byte_array() const
+    {
+      if (type_ != Type::BYTE_ARRAY)
+      {
+        throw std::runtime_error("Parameter is not a string array");
+      }
+      return string_to_vector<uint8_t>(string_value_);
+    }
+
   private:
     enum class Type
     {
@@ -128,12 +204,63 @@ namespace lwrcl
       INT,
       DOUBLE,
       STRING,
+      BOOL_ARRAY,
+      INT_ARRAY,
+      DOUBLE_ARRAY,
+      STRING_ARRAY,
+      BYTE_ARRAY,
       UNKNOWN
     };
 
     std::string name_;
     std::string string_value_;
     Type type_;
+
+    // Convert int to string
+    static std::string int_to_string(int value) {
+        std::ostringstream oss;
+        oss << value;
+        return oss.str();
+    }
+
+    // Convert double to string
+    static std::string double_to_string(double value) {
+        std::ostringstream oss;
+        oss << value;
+        return oss.str();
+    }
+
+    // Convert vector to string
+    template <typename T>
+    static std::string vector_to_string(const std::vector<T> &vec)
+    {
+        std::ostringstream oss;
+        for (size_t i = 0; i < vec.size(); ++i)
+        {
+            if (i > 0) {
+                oss << ",";
+            }
+            oss << vec[i];
+        }
+        return oss.str();
+    }
+
+    // Convert string to vector
+    template <typename T>
+    static std::vector<T> string_to_vector(const std::string &str)
+    {
+        std::vector<T> vec;
+        std::istringstream iss(str);
+        std::string item;
+        while (std::getline(iss, item, ','))
+        {
+            std::istringstream converter(item);
+            T value;
+            converter >> value;
+            vec.push_back(value);
+        }
+        return vec;
+    }
   };
 
   class QoS
@@ -367,6 +494,116 @@ namespace lwrcl
     }
 
     void declare_parameter(const std::string &name, const char* default_value)
+    {
+      std::string node_name = this->get_name();
+
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        const Parameters &params = node_it->second;
+        auto param_it = params.find(name);
+        if (param_it != params.end())
+        {
+          Parameter param_value = param_it->second;
+          parameters_[name] = param_value;
+          node_parameters[node_name][name] = param_value;
+          return;
+        }
+      }
+
+      parameters_[name] = Parameter(name, default_value);
+      node_parameters[node_name][name] = Parameter(name, default_value);
+    }
+
+    void declare_parameter(const std::string &name, const std::vector<bool> default_value)
+    {
+      std::string node_name = this->get_name();
+
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        const Parameters &params = node_it->second;
+        auto param_it = params.find(name);
+        if (param_it != params.end())
+        {
+          Parameter param_value = param_it->second;
+          parameters_[name] = param_value;
+          node_parameters[node_name][name] = param_value;
+          return;
+        }
+      }
+
+      parameters_[name] = Parameter(name, default_value);
+      node_parameters[node_name][name] = Parameter(name, default_value);
+    }
+
+    void declare_parameter(const std::string &name, const std::vector<int> default_value)
+    {
+      std::string node_name = this->get_name();
+
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        const Parameters &params = node_it->second;
+        auto param_it = params.find(name);
+        if (param_it != params.end())
+        {
+          Parameter param_value = param_it->second;
+          parameters_[name] = param_value;
+          node_parameters[node_name][name] = param_value;
+          return;
+        }
+      }
+
+      parameters_[name] = Parameter(name, default_value);
+      node_parameters[node_name][name] = Parameter(name, default_value);
+    }
+
+    void declare_parameter(const std::string &name, const std::vector<double> default_value)
+    {
+      std::string node_name = this->get_name();
+
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        const Parameters &params = node_it->second;
+        auto param_it = params.find(name);
+        if (param_it != params.end())
+        {
+          Parameter param_value = param_it->second;
+          parameters_[name] = param_value;
+          node_parameters[node_name][name] = param_value;
+          return;
+        }
+      }
+
+      parameters_[name] = Parameter(name, default_value);
+      node_parameters[node_name][name] = Parameter(name, default_value);
+    }
+
+    void declare_parameter(const std::string &name, const std::vector<std::string> default_value)
+    {
+      std::string node_name = this->get_name();
+
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        const Parameters &params = node_it->second;
+        auto param_it = params.find(name);
+        if (param_it != params.end())
+        {
+          Parameter param_value = param_it->second;
+          parameters_[name] = param_value;
+          node_parameters[node_name][name] = param_value;
+          return;
+        }
+      }
+
+      parameters_[name] = Parameter(name, default_value);
+      node_parameters[node_name][name] = Parameter(name, default_value);
+    }
+
+    void declare_parameter(const std::string &name, const std::vector<uint8_t> default_value)
     {
       std::string node_name = this->get_name();
 
