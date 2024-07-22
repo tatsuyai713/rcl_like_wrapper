@@ -36,8 +36,8 @@ void ROSTypeDataPublisher::init()
   this->declare_parameter("publish_topic_name", std::string("default_topic_pub"));
   this->declare_parameter("publish_topic_interval_ms", 100);
 
-  topic_name_ = this->get_parameter<std::string>("publish_topic_name");
-  interval_ms_ = this->get_parameter<uint16_t>("publish_topic_interval_ms");
+  this->get_parameter("publish_topic_name", topic_name_);
+  this->get_parameter("publish_topic_interval_ms", interval_ms_);
   
   std::cout << "publish_topic_name: " << topic_name_ << std::endl;
   std::cout << "interval_ms: " << interval_ms_ << std::endl;

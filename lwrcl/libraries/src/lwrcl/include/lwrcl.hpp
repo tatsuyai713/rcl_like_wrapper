@@ -41,6 +41,97 @@ namespace lwrcl
   void sleep_for(const lwrcl::Duration &duration);
   void spin_some(std::shared_ptr<lwrcl::Node> node);
 
+  // Base class for different parameter types
+
+  class ParameterBase
+  {
+  public:
+    virtual ~ParameterBase() = default;
+    virtual std::string get_name() const = 0;
+    virtual std::string as_string() const = 0;
+  };
+
+  class Parameter : public ParameterBase
+  {
+  public:
+    // Constructor for bool
+    Parameter(const std::string &name, bool value) : name_(name), type_(Type::BOOL)
+    {
+      string_value_ = value ? "true" : "false";
+    }
+
+    // Constructor for int
+    Parameter(const std::string &name, int value) : name_(name), type_(Type::INT)
+    {
+      string_value_ = std::to_string(value);
+    }
+
+    // Constructor for double
+    Parameter(const std::string &name, double value) : name_(name), type_(Type::DOUBLE)
+    {
+      string_value_ = std::to_string(value);
+    }
+
+    // Constructor for std::string
+    Parameter(const std::string &name, const std::string &value) : name_(name), string_value_(value), type_(Type::STRING) {}
+
+    Parameter() : type_(Type::UNKNOWN) {}
+
+    // Get name
+    std::string get_name() const override { return name_; }
+
+    // Get value (specific to type)
+    bool as_bool() const
+    {
+      if (type_ != Type::BOOL)
+      {
+        throw std::runtime_error("Parameter is not a bool");
+      }
+      return string_value_ == "true";
+    }
+
+    int as_int() const
+    {
+      if (type_ != Type::INT)
+      {
+        throw std::runtime_error("Parameter is not an int");
+      }
+      int int_value;
+      std::istringstream iss(string_value_);
+      iss >> int_value;
+      return int_value;
+    }
+    double as_double() const
+    {
+      if (type_ != Type::DOUBLE)
+      {
+        throw std::runtime_error("Parameter is not a double");
+      }
+      double double_value;
+      std::istringstream iss(string_value_);
+      iss >> double_value;
+      return double_value;
+    }
+    std::string as_string() const
+    {
+      return string_value_;
+    }
+
+  private:
+    enum class Type
+    {
+      BOOL,
+      INT,
+      DOUBLE,
+      STRING,
+      UNKNOWN
+    };
+
+    std::string name_;
+    std::string string_value_;
+    Type type_;
+  };
+
   class QoS
   {
   public:
@@ -55,8 +146,7 @@ namespace lwrcl
     uint16_t depth_;
   };
 
-  typedef std::string ParameterValue;
-  typedef std::unordered_map<std::string, ParameterValue> Parameters;
+  typedef std::unordered_map<std::string, Parameter> Parameters;
   typedef std::unordered_map<std::string, Parameters> NodeParameters;
 
   extern NodeParameters node_parameters;
@@ -140,20 +230,51 @@ namespace lwrcl
     Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name);
     virtual ~Node();
 
-    // Declare and get parameter methods
-    template <typename T>
-    class Parameter
+    void set_parameters(const std::vector<std::shared_ptr<ParameterBase>> &parameters)
     {
-    public:
-      Parameter(const T &value) : value_(value) {}
-      T get_value() const { return value_; }
+      for (const auto &param : parameters)
+      {
+        std::string node_name = this->get_name();
+        std::string param_name = param->get_name();
 
-    private:
-      T value_;
-    };
+        // Check if the node exists in node_parameters
+        auto node_it = node_parameters.find(node_name);
+        if (node_it != node_parameters.end())
+        {
+          Parameters &params = node_it->second;
 
-    template <typename T>
-    void declare_parameter(const std::string &name, const T &default_value)
+          // Check if the parameter exists in the node_parameters for this node
+          if (params.find(param_name) != params.end())
+          {
+            // Update the existing parameter
+            params[param_name] = *std::dynamic_pointer_cast<Parameter>(param);
+            parameters_[param_name] = *std::dynamic_pointer_cast<Parameter>(param);
+
+            std::cout << "Parameter updated: " << param_name << std::endl;
+          }
+          else
+          {
+            std::cerr << "Parameter not found: " << param_name << std::endl;
+          }
+        }
+        else
+        {
+          std::cerr << "Node not found: " << node_name << std::endl;
+        }
+      }
+    }
+
+    void set_parameters(const std::vector<Parameter> &parameters)
+    {
+      std::vector<std::shared_ptr<ParameterBase>> base_params;
+      for (const auto &param : parameters)
+      {
+        base_params.push_back(std::make_shared<Parameter>(param));
+      }
+      set_parameters(base_params);
+    }
+
+    void declare_parameter(const std::string &name, const bool &default_value)
     {
       std::string node_name = this->get_name();
 
@@ -164,26 +285,137 @@ namespace lwrcl
         auto param_it = params.find(name);
         if (param_it != params.end())
         {
-          std::string param_value = param_it->second;
-          std::istringstream iss(param_value);
-          T converted_value;
-          iss >> converted_value;
-          parameters_[name] = std::make_shared<Parameter<T>>(converted_value);
+          Parameter param_value = param_it->second;
+          parameters_[name] = param_value;
           return;
         }
       }
 
-      parameters_[name] = std::make_shared<Parameter<T>>(default_value);
+      parameters_[name] = Parameter(name, default_value);
     }
 
-    template <typename T>
-    T get_parameter(const std::string &name) const
+    void declare_parameter(const std::string &name, const int &default_value)
+    {
+      std::string node_name = this->get_name();
+
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        const Parameters &params = node_it->second;
+        auto param_it = params.find(name);
+        if (param_it != params.end())
+        {
+          Parameter param_value = param_it->second;
+          parameters_[name] = param_value;
+          return;
+        }
+      }
+
+      parameters_[name] = Parameter(name, default_value);
+    }
+
+    void declare_parameter(const std::string &name, const double &default_value)
+    {
+      std::string node_name = this->get_name();
+
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        const Parameters &params = node_it->second;
+        auto param_it = params.find(name);
+        if (param_it != params.end())
+        {
+          Parameter param_value = param_it->second;
+          parameters_[name] = param_value;
+          return;
+        }
+      }
+
+      parameters_[name] = Parameter(name, default_value);
+    }
+
+    void declare_parameter(const std::string &name, const std::string &default_value)
+    {
+      std::string node_name = this->get_name();
+
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        const Parameters &params = node_it->second;
+        auto param_it = params.find(name);
+        if (param_it != params.end())
+        {
+          Parameter param_value = param_it->second;
+          parameters_[name] = param_value;
+          return;
+        }
+      }
+
+      parameters_[name] = Parameter(name, default_value);
+    }
+
+    Parameter get_parameter(const std::string &name) const
     {
       auto it = parameters_.find(name);
       if (it != parameters_.end())
       {
-        std::shared_ptr<Parameter<T>> param = std::static_pointer_cast<Parameter<T>>(it->second);
-        return param->get_value();
+        return it->second;
+      }
+      else
+      {
+        throw std::runtime_error("Parameter not found");
+      }
+    }
+
+    void get_parameter(const std::string &name, bool &bool_data) const
+    {
+      auto it = parameters_.find(name);
+      if (it != parameters_.end())
+      {
+        Parameter param = it->second;
+        bool_data = param.as_bool();
+      }
+      else
+      {
+        throw std::runtime_error("Parameter not found");
+      }
+    }
+
+    void get_parameter(const std::string &name, int &int_data) const
+    {
+      auto it = parameters_.find(name);
+      if (it != parameters_.end())
+      {
+        Parameter param = it->second;
+        int_data = param.as_int();
+      }
+      else
+      {
+        throw std::runtime_error("Parameter not found");
+      }
+    }
+
+    void get_parameter(const std::string &name, double &double_data) const
+    {
+      auto it = parameters_.find(name);
+      if (it != parameters_.end())
+      {
+        Parameter param = it->second;
+        double_data = param.as_double();
+      }
+      else
+      {
+        throw std::runtime_error("Parameter not found");
+      }
+    }
+
+    void get_parameter(const std::string &name, std::string &string_data) const
+    {
+      auto it = parameters_.find(name);
+      if (it != parameters_.end())
+      {
+        Parameter param = it->second;
+        string_data = param.as_string();
       }
       else
       {
@@ -201,9 +433,6 @@ namespace lwrcl
     Node(int domain_id);
     Node(int domain_id, const std::string &name);
     Node(const std::string &name);
-
-  private:
-    std::map<std::string, std::shared_ptr<void>> parameters_;
 
   private:
     struct DomainParticipantDeleter
@@ -227,6 +456,7 @@ namespace lwrcl
     Channel<ChannelCallback *>::SharedPtr channel_;
     Clock::SharedPtr clock_;
     std::string name_;
+    Parameters parameters_;
   };
 
   namespace executors

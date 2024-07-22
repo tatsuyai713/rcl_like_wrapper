@@ -716,10 +716,25 @@ namespace lwrcl
       {
         std::string param_name = param_it->first.as<std::string>();
         auto param_value = param_it->second;
-
-        if (param_value.IsScalar())
-        {
-          params[param_name] = param_value.as<std::string>();
+        try {
+            param_value.as<int>();
+            int value = param_value.as<int>();
+            params[param_name] = Parameter(param_name, value);
+        } catch (const YAML::BadConversion&) {
+            try {
+                param_value.as<double>();
+                double value = param_value.as<double>();
+                params[param_name] = Parameter(param_name, value);
+            } catch (const YAML::BadConversion&) {
+                try {
+                    param_value.as<bool>();
+                    bool value = param_value.as<bool>();
+                    params[param_name] = Parameter(param_name, value);
+                } catch (const YAML::BadConversion&) {
+                    std::string value = param_value.as<std::string>();
+                    params[param_name] = Parameter(param_name, value);
+                }
+            }
         }
       }
       node_parameters[node_name] = params;

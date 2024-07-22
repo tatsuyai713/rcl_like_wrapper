@@ -31,7 +31,7 @@ public:
 private:
   std::string publish_topic_name_;
   std::string subscribe_topic_name_;
-  uint16_t interval_ms_;
+  int interval_ms_;
   Publisher<sensor_msgs::msg::Image>::SharedPtr publisher_ptr_;
   Subscription<sensor_msgs::msg::Image>::SharedPtr subscriber_ptr_;
   TimerBase::SharedPtr timer_ptr_;

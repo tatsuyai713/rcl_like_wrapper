@@ -13,6 +13,7 @@ namespace rclcpp {
     using Time = lwrcl::Time;
     using Rate = lwrcl::Rate;
     using WallRate = lwrcl::WallRate;
+    using Parameter = lwrcl::Parameter;
     template <typename MessageType>
     using Subscription = ::lwrcl::Subscription<MessageType>;
     template <typename MessageType>

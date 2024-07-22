@@ -35,10 +35,10 @@ void ROSTypeImagePubSub::init()
   this->declare_parameter("subscribe_topic_name", std::string("default_topic_sub"));
   this->declare_parameter("subscribe_topic_interval_ms", 100);
 
-  publish_topic_name_ = this->get_parameter<std::string>("publish_topic_name");
-  interval_ms_ = this->get_parameter<uint16_t>("publish_topic_interval_ms");
-  subscribe_topic_name_ = this->get_parameter<std::string>("subscribe_topic_name");
-  
+  this->get_parameter("publish_topic_name", publish_topic_name_);
+  this->get_parameter("publish_topic_interval_ms", interval_ms_);
+  this->get_parameter("subscribe_topic_name", subscribe_topic_name_);
+
   std::cout << "publish_topic_name: " << publish_topic_name_ << std::endl;
   std::cout << "interval_ms: " << interval_ms_ << std::endl;
   std::cout << "subscribe_topic_name: " << subscribe_topic_name_ << std::endl;

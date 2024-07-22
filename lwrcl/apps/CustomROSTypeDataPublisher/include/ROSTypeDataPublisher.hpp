@@ -26,7 +26,7 @@ public:
 
 private:
   std::string topic_name_;
-  uint16_t interval_ms_;
+  int interval_ms_;
   Publisher<CustomROSTypeDataPublisher::msg::CustomMessage>::SharedPtr publisher_ptr_;
   TimerBase::SharedPtr timer_ptr_;
   std::function<void()> timer_callback_;
