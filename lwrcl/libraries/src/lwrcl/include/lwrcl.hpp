@@ -55,25 +55,29 @@ namespace lwrcl
   {
   public:
     // Constructor for bool
-    Parameter(const std::string &name, bool value) : name_(name), type_(Type::BOOL)
-    {
-      string_value_ = value ? "true" : "false";
+    Parameter(const std::string &name, bool value) : name_(name), type_(Type::BOOL) {
+        string_value_ = value ? "true" : "false";
     }
 
     // Constructor for int
-    Parameter(const std::string &name, int value) : name_(name), type_(Type::INT)
-    {
-      string_value_ = std::to_string(value);
+    Parameter(const std::string &name, int value) : name_(name), type_(Type::INT) {
+        string_value_ = std::to_string(value);
     }
 
     // Constructor for double
-    Parameter(const std::string &name, double value) : name_(name), type_(Type::DOUBLE)
-    {
-      string_value_ = std::to_string(value);
+    Parameter(const std::string &name, double value) : name_(name), type_(Type::DOUBLE) {
+        string_value_ = std::to_string(value);
     }
 
     // Constructor for std::string
-    Parameter(const std::string &name, const std::string &value) : name_(name), string_value_(value), type_(Type::STRING) {}
+    Parameter(const std::string &name, const std::string &value) : name_(name), type_(Type::STRING) {
+        string_value_ = value;
+    }
+
+    // Constructor for const char*
+    Parameter(const std::string &name, const char* value) : name_(name), type_(Type::STRING) {
+        string_value_ = value;
+    }
 
     Parameter() : type_(Type::UNKNOWN) {}
 
@@ -287,11 +291,13 @@ namespace lwrcl
         {
           Parameter param_value = param_it->second;
           parameters_[name] = param_value;
+          node_parameters[node_name][name] = param_value;
           return;
         }
       }
 
       parameters_[name] = Parameter(name, default_value);
+      node_parameters[node_name][name] = Parameter(name, default_value);
     }
 
     void declare_parameter(const std::string &name, const int &default_value)
@@ -307,11 +313,13 @@ namespace lwrcl
         {
           Parameter param_value = param_it->second;
           parameters_[name] = param_value;
+          node_parameters[node_name][name] = param_value;
           return;
         }
       }
 
       parameters_[name] = Parameter(name, default_value);
+      node_parameters[node_name][name] = Parameter(name, default_value);
     }
 
     void declare_parameter(const std::string &name, const double &default_value)
@@ -327,11 +335,13 @@ namespace lwrcl
         {
           Parameter param_value = param_it->second;
           parameters_[name] = param_value;
+          node_parameters[node_name][name] = param_value;
           return;
         }
       }
 
       parameters_[name] = Parameter(name, default_value);
+      node_parameters[node_name][name] = Parameter(name, default_value);
     }
 
     void declare_parameter(const std::string &name, const std::string &default_value)
@@ -347,11 +357,35 @@ namespace lwrcl
         {
           Parameter param_value = param_it->second;
           parameters_[name] = param_value;
+          node_parameters[node_name][name] = param_value;
           return;
         }
       }
 
       parameters_[name] = Parameter(name, default_value);
+      node_parameters[node_name][name] = Parameter(name, default_value);
+    }
+
+    void declare_parameter(const std::string &name, const char* default_value)
+    {
+      std::string node_name = this->get_name();
+
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        const Parameters &params = node_it->second;
+        auto param_it = params.find(name);
+        if (param_it != params.end())
+        {
+          Parameter param_value = param_it->second;
+          parameters_[name] = param_value;
+          node_parameters[node_name][name] = param_value;
+          return;
+        }
+      }
+
+      parameters_[name] = Parameter(name, default_value);
+      node_parameters[node_name][name] = Parameter(name, default_value);
     }
 
     Parameter get_parameter(const std::string &name) const
