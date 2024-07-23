@@ -31,8 +31,15 @@ namespace lwrcl
   extern void lwrcl_signal_handler(int signal);
 
   class Logger;
+  class QoS;
   class Node;
-
+  class IService;
+  class IClient;
+  template <typename Req, typename Res>
+  class Service;
+  template <typename Req, typename Res>
+  class Client;
+  
   // lwrcl functions
   bool ok(void);
   void spin(std::shared_ptr<lwrcl::Node> node);
@@ -308,6 +315,14 @@ namespace lwrcl
     }
 
     template <typename T>
+    std::shared_ptr<Publisher<T>> create_service_publisher(const std::string &topic)
+    {
+      auto publisher = std::make_shared<Publisher<T>>(participant_.get(), std::string("rp/") + topic, 1);
+      publisher_list_.push_front(publisher);
+      return publisher;
+    }
+
+    template <typename T>
     std::shared_ptr<Subscription<T>> create_subscription(const std::string &topic, const uint16_t &depth,
                                                          std::function<void(std::shared_ptr<T>)> callback_function)
     {
@@ -323,6 +338,33 @@ namespace lwrcl
       auto subscription = std::make_shared<Subscription<T>>(participant_.get(), std::string("rt/") + topic, depth.get_depth(), callback_function, channel_);
       subscription_list_.push_front(subscription);
       return subscription;
+    }
+
+    template <typename T>
+    std::shared_ptr<Subscription<T>> create_service_subscription(const std::string &topic, const QoS &depth,
+                                                         std::function<void(std::shared_ptr<T>)> callback_function)
+    {
+      auto subscription = std::make_shared<Subscription<T>>(participant_.get(), std::string("rp/") + topic, 1, callback_function, channel_);
+      subscription_list_.push_front(subscription);
+      return subscription;
+    }
+
+    template <typename Req, typename Res>
+    std::shared_ptr<Service<Req, Res>> create_service(const std::string &service_name, std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function)
+    {
+      std::shared_ptr<Service<Req, Res>> service = std::make_shared<Service>(this->participant_, service_name, callback_function);
+      service_list_.push_front(service);
+
+      return service;
+    }
+
+    template <typename Req, typename Res>
+    std::shared_ptr<Client<Req,Res>> create_client(const std::string &service_name)
+    {
+      std::shared_ptr<Client<Req, Res>> client = std::make_shared<Client<Req, Res>>(this->participant_, service_name);
+      client_list_.push_front(client);
+
+      return client;
     }
 
     template <typename Rep, typename Period>
@@ -727,6 +769,8 @@ namespace lwrcl
     std::forward_list<std::shared_ptr<IPublisher>> publisher_list_;
     std::forward_list<std::shared_ptr<ISubscription>> subscription_list_;
     std::forward_list<std::shared_ptr<ITimerBase>> timer_list_;
+    std::forward_list<std::shared_ptr<IService>> service_list_;
+    std::forward_list<std::shared_ptr<IClient>> client_list_;
     Parameters parameters_;
   };
 
@@ -815,6 +859,122 @@ namespace lwrcl
 
   private:
     std::string node_name_;
+  };
+    class IService
+  {
+  public:
+    virtual ~IService() = default;
+    virtual void stop() = 0;
+  };
+  
+  template <typename Req, typename Res>
+  class Service : public IService, public std::enable_shared_from_this<Service<Req, Res>> {
+  public:
+      using SharedPtr = std::shared_ptr<Service>;
+
+      Service(std::shared_ptr<lwrcl::Node> node, const std::string &service_name, std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function)
+          : node_(node), service_name_(service_name), callback_function_(callback_function) {
+          // Create topic
+          request_topic_name_ = service_name_ + "_Request";
+          response_topic_name_ = service_name_ + "_Response";
+          publisher_ = node_->create_service_publisher<Res>(response_topic_name_);
+          request_callback_function_ = [this](std::shared_ptr<Req> request) {
+              std::shared_ptr<Res> response = std::make_shared<Res>();
+              callback_function_(request, response);
+              publisher_->publish(response);
+          };
+          subscription_ = node_->create_service_subscription<Req>(request_topic_name_, 1, request_callback_function_);
+      }
+
+      ~Service() {} // Destructor
+
+      void stop() override
+      {
+          subscription_->stop();
+      }
+
+  private:
+      std::shared_ptr<lwrcl::Node> node_;
+      std::string service_name_;
+      std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function_;
+      std::function<void(std::shared_ptr<Req>)> request_callback_function_;
+      std::shared_ptr<Publisher<Res>> publisher_;
+      std::shared_ptr<Subscription<Req>> subscription_;
+      std::string request_topic_name_;
+      std::string response_topic_name_;
+  };
+
+
+  class IClient
+  {
+  public:
+    virtual ~IClient() = default;
+    virtual void stop() = 0;
+  };
+  
+  template <typename Req, typename Res>
+  class Client : public IClient, public std::enable_shared_from_this<Client<Req, Res>>
+  {
+  public:
+    using SharedPtr = std::shared_ptr<Client>;
+
+    Client(std::shared_ptr<Node> node, const std::string &service_name)
+        : node_(node), service_name_(service_name), response_(nullptr), response_callback_function_(nullptr)
+        {
+          // Create topic
+          request_topic_name_ = service_name_ + "_Request";
+          response_topic_name_ = service_name_ + "_Response";
+          publisher_ = node_->create_service_publisher<Req>(request_topic_name_);
+          subscription_ = node_->create_service_subscription<Res>(response_topic_name_, 1, std::bind(&Client::handle_response, this, std::placeholders::_1));
+        }
+    ~Client() {} // Destructor
+
+    void handle_response(std::shared_ptr<Res> response) {
+      if (response_callback_function_) {
+        response_callback_function_(response);
+      }
+    }
+
+    void stop() override
+    {
+      subscription_->stop();
+    }
+
+    void async_send_request(std::shared_ptr<Req> request, std::function<void(std::shared_ptr<Res>)> callback_function)
+    {
+      response_callback_function_ = callback_function;
+      publisher_->publish(request);
+    }
+
+    template <typename Duration>
+    bool wait_for_service(const Duration& timeout)
+    {
+      std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
+      std::chrono::system_clock::time_point current_time = std::chrono::system_clock::now();
+      std::chrono::system_clock::time_point end_time = start_time + timeout;
+
+      while (current_time < end_time)
+      {
+        if (publisher_->get_subscriber_count() > 0)
+        {
+          return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        current_time = std::chrono::system_clock::now();
+      }
+
+      return false;
+    }
+
+  private:
+    std::shared_ptr<Node> node_;
+    std::string service_name_;
+    std::shared_ptr<Publisher<Req>> publisher_;
+    std::shared_ptr<Subscription<Res>> subscription_;
+    std::string request_topic_name_;
+    std::string response_topic_name_;
+    std::function<void(std::shared_ptr<Res>)> response_callback_function_;
+    std::shared_ptr<Res> response_;
   };
 
 } // namespace lwrcl

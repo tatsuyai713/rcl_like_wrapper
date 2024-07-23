@@ -641,6 +641,16 @@ namespace lwrcl
       std::static_pointer_cast<TimerBase>(timer)->stop();
     }
     timer_list_.clear();
+
+    for (auto &service : service_list_)
+    {
+      std::static_pointer_cast<IService>(service)->stop();
+    }
+    service_list_.clear();
+    for (auto &client : client_list_)
+    {
+      std::static_pointer_cast<IClient>(client)->stop();
+    }
     closed_ = 1;
   }
 
