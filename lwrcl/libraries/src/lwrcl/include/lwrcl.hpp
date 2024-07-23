@@ -721,12 +721,12 @@ namespace lwrcl
     void loadParameters(const std::string &file_path);
 
     std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant_;
-    std::forward_list<std::shared_ptr<IPublisher>> publisher_list_;
-    std::forward_list<std::shared_ptr<ISubscription>> subscription_list_;
-    std::forward_list<std::shared_ptr<ITimerBase>> timer_list_;
     Channel<ChannelCallback *>::SharedPtr channel_;
     Clock::SharedPtr clock_;
     std::string name_;
+    std::forward_list<std::shared_ptr<IPublisher>> publisher_list_;
+    std::forward_list<std::shared_ptr<ISubscription>> subscription_list_;
+    std::forward_list<std::shared_ptr<ITimerBase>> timer_list_;
     Parameters parameters_;
   };
 

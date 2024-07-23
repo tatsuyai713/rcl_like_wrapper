@@ -384,41 +384,11 @@ namespace lwrcl
     next_time_ += std::chrono::nanoseconds(period_.nanoseconds());
   }
 
-  Node::Node(int domain_id) : clock_(std::make_unique<Clock>()), channel_(std::make_shared<Channel<ChannelCallback *>>())
-  {
-    name_ = "lwrcl_default_node"; // Default node name
-    dds::DomainParticipantQos participant_qos = dds::PARTICIPANT_QOS_DEFAULT;
-
-    // Create a descriptor for the new transport.
-    auto udp_transport = std::make_shared<eprosima::fastdds::rtps::UDPv4TransportDescriptor>();
-    udp_transport->sendBufferSize = 4194304;
-    udp_transport->receiveBufferSize = 4194304;
-    udp_transport->non_blocking_send = true;
-
-    // Link the Transport Layer to the Participant.
-    participant_qos.transport().user_transports.emplace_back(udp_transport);
-
-    // Increase the sending buffer size
-    participant_qos.transport().send_socket_buffer_size = 4194304;
-    // Increase the receiving buffer size
-    participant_qos.transport().listen_socket_buffer_size = 4194304;
-
-    // eprosima::fastdds::dds::Log::SetVerbosity(eprosima::fastdds::dds::Log::Info);
-
-    auto participant_factory = eprosima::fastdds::dds::DomainParticipantFactory::get_instance();
-    participant_factory->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
-
-    participant_ = std::shared_ptr<eprosima::fastdds::dds::DomainParticipant>(
-        participant_factory->create_participant(domain_id, participant_qos),
-        DomainParticipantDeleter());
-    if (!participant_)
-    {
-      throw std::runtime_error("Failed to create domain participant");
-    }
-    closed_ = 0;
-  }
-
-  Node::Node(int domain_id, const std::string &name) : clock_(std::make_unique<Clock>()), name_(name), channel_(std::make_shared<Channel<ChannelCallback *>>())
+  Node::Node(int domain_id)
+      : participant_(nullptr),
+        channel_(std::make_shared<Channel<ChannelCallback *>>()),
+        clock_(std::make_unique<Clock>()),
+        name_("lwrcl_default_node")
   {
     dds::DomainParticipantQos participant_qos = dds::PARTICIPANT_QOS_DEFAULT;
 
@@ -451,7 +421,48 @@ namespace lwrcl
     closed_ = 0;
   }
 
-  Node::Node(const std::string &name) : clock_(std::make_unique<Clock>()), name_(name), channel_(std::make_shared<Channel<ChannelCallback *>>())
+  Node::Node(int domain_id, const std::string &name)
+      : participant_(nullptr),
+        channel_(std::make_shared<Channel<ChannelCallback *>>()),
+        clock_(std::make_unique<Clock>()),
+        name_(name)
+  {
+    dds::DomainParticipantQos participant_qos = dds::PARTICIPANT_QOS_DEFAULT;
+
+    // Create a descriptor for the new transport.
+    auto udp_transport = std::make_shared<eprosima::fastdds::rtps::UDPv4TransportDescriptor>();
+    udp_transport->sendBufferSize = 4194304;
+    udp_transport->receiveBufferSize = 4194304;
+    udp_transport->non_blocking_send = true;
+
+    // Link the Transport Layer to the Participant.
+    participant_qos.transport().user_transports.emplace_back(udp_transport);
+
+    // Increase the sending buffer size
+    participant_qos.transport().send_socket_buffer_size = 4194304;
+    // Increase the receiving buffer size
+    participant_qos.transport().listen_socket_buffer_size = 4194304;
+
+    // eprosima::fastdds::dds::Log::SetVerbosity(eprosima::fastdds::dds::Log::Info);
+
+    auto participant_factory = eprosima::fastdds::dds::DomainParticipantFactory::get_instance();
+    participant_factory->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
+
+    participant_ = std::shared_ptr<eprosima::fastdds::dds::DomainParticipant>(
+        participant_factory->create_participant(domain_id, participant_qos),
+        DomainParticipantDeleter());
+    if (!participant_)
+    {
+      throw std::runtime_error("Failed to create domain participant");
+    }
+    closed_ = 0;
+  }
+
+  Node::Node(const std::string &name)
+      : participant_(nullptr),
+        channel_(std::make_shared<Channel<ChannelCallback *>>()),
+        clock_(std::make_unique<Clock>()),
+        name_(name)
   {
     int domain_id = 0; // Default domain ID
     dds::DomainParticipantQos participant_qos = dds::PARTICIPANT_QOS_DEFAULT;
@@ -485,9 +496,12 @@ namespace lwrcl
     closed_ = 0;
   }
 
-  Node::Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant) : clock_(std::make_unique<Clock>()), participant_(participant), channel_(std::make_shared<Channel<ChannelCallback *>>())
+  Node::Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
+      : participant_(participant),
+        channel_(std::make_shared<Channel<ChannelCallback *>>()),
+        clock_(std::make_unique<Clock>()),
+        name_("lwrcl_default_node")
   {
-    name_ = "lwrcl_default_node"; // Default node name
     if (!participant_)
     {
       throw std::runtime_error("Failed to create domain participant");
@@ -495,7 +509,12 @@ namespace lwrcl
     closed_ = 0;
   }
 
-  Node::Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name) : clock_(std::make_unique<Clock>()), participant_(participant), name_(name), channel_(std::make_shared<Channel<ChannelCallback *>>())
+  Node::Node(
+      std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name)
+      : participant_(participant),
+        channel_(std::make_shared<Channel<ChannelCallback *>>()),
+        clock_(std::make_unique<Clock>()),
+        name_(name)
   {
     if (!participant_)
     {
@@ -716,25 +735,34 @@ namespace lwrcl
       {
         std::string param_name = param_it->first.as<std::string>();
         auto param_value = param_it->second;
-        try {
-            param_value.as<int>();
-            int value = param_value.as<int>();
+        try
+        {
+          param_value.as<int>();
+          int value = param_value.as<int>();
+          params[param_name] = Parameter(param_name, value);
+        }
+        catch (const YAML::BadConversion &)
+        {
+          try
+          {
+            param_value.as<double>();
+            double value = param_value.as<double>();
             params[param_name] = Parameter(param_name, value);
-        } catch (const YAML::BadConversion&) {
-            try {
-                param_value.as<double>();
-                double value = param_value.as<double>();
-                params[param_name] = Parameter(param_name, value);
-            } catch (const YAML::BadConversion&) {
-                try {
-                    param_value.as<bool>();
-                    bool value = param_value.as<bool>();
-                    params[param_name] = Parameter(param_name, value);
-                } catch (const YAML::BadConversion&) {
-                    std::string value = param_value.as<std::string>();
-                    params[param_name] = Parameter(param_name, value);
-                }
+          }
+          catch (const YAML::BadConversion &)
+          {
+            try
+            {
+              param_value.as<bool>();
+              bool value = param_value.as<bool>();
+              params[param_name] = Parameter(param_name, value);
             }
+            catch (const YAML::BadConversion &)
+            {
+              std::string value = param_value.as<std::string>();
+              params[param_name] = Parameter(param_name, value);
+            }
+          }
         }
       }
       node_parameters[node_name] = params;
