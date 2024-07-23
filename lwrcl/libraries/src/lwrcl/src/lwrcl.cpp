@@ -358,17 +358,31 @@ namespace lwrcl
   Clock::ClockType Clock::get_clock_type() const { return type_; }
 
   // Rate implementation
-  Rate::Rate(const Duration &period) : period_(period), next_time_(std::chrono::system_clock::now() + std::chrono::nanoseconds(period.nanoseconds())) {}
+  Rate::Rate(const Duration &period) : period_(period)
+  {
+    auto now = std::chrono::system_clock::now();
+    auto duration = std::chrono::nanoseconds(period.nanoseconds());
+    auto next_time_temp = now + duration;
+    next_time_ = std::chrono::time_point_cast<std::chrono::system_clock::duration>(next_time_temp);
+  }
   void Rate::sleep()
   {
     auto now = std::chrono::system_clock::now();
     if (now >= next_time_)
     {
-      auto periods_missed = std::chrono::duration_cast<std::chrono::nanoseconds>(now - next_time_) / std::chrono::nanoseconds(period_.nanoseconds()) + 1;
-      next_time_ += periods_missed * std::chrono::nanoseconds(period_.nanoseconds());
+      auto periods_missed = std::chrono::duration_cast<std::chrono::nanoseconds>(now - next_time_) /
+                                std::chrono::nanoseconds(period_.nanoseconds()) +
+                            1;
+      auto duration_to_add =
+          std::chrono::nanoseconds(static_cast<long long>(periods_missed) * period_.nanoseconds());
+      auto next_time_temp = next_time_ + duration_to_add;
+      next_time_ = std::chrono::time_point_cast<std::chrono::system_clock::duration>(next_time_temp);
     }
     std::this_thread::sleep_until(next_time_);
-    next_time_ += std::chrono::nanoseconds(period_.nanoseconds());
+
+    auto duration_to_add = std::chrono::nanoseconds(period_.nanoseconds());
+    auto next_time_temp = next_time_ + duration_to_add;
+    next_time_ = std::chrono::time_point_cast<std::chrono::system_clock::duration>(next_time_temp);
   }
 
   WallRate::WallRate(const Duration &period) : period_(period), next_time_(std::chrono::steady_clock::now() + std::chrono::nanoseconds(period.nanoseconds())) {}
