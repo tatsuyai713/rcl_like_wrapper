@@ -1,27 +1,24 @@
 #ifndef LWRCL_HPP_
 #define LWRCL_HPP_
 
-#include <functional>
-#include <string>
-#include <unordered_map>
-#include <forward_list>
-#include <vector>
-#include <thread>
-#include <mutex>
+#include <atomic>
 #include <chrono>
 #include <csignal>
-#include <cstring>
-#include <iostream>
-#include <atomic>
-#include <string>
 #include <cstdarg> // For variable arguments handling
-#include <iostream>
-#include <chrono>
+#include <cstring>
+#include <forward_list>
+#include <functional>
+#include <future>
 #include <iomanip>
-
-#include "fast_dds_header.hpp"
+#include <iostream>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include <vector>
 
 #include "clock_time_duration.hpp"
+#include "fast_dds_header.hpp"
 #include "publisher.hpp"
 #include "subscription.hpp"
 #include "timer.hpp"
@@ -39,7 +36,7 @@ namespace lwrcl
   class Service;
   template <typename Req, typename Res>
   class Client;
-  
+
   // lwrcl functions
   bool ok(void);
   void spin(std::shared_ptr<lwrcl::Node> node);
@@ -62,58 +59,75 @@ namespace lwrcl
   {
   public:
     // Constructor for bool
-    Parameter(const std::string &name, bool value) : name_(name), type_(Type::BOOL) {
-        string_value_ = value ? "true" : "false";
+    Parameter(const std::string &name, bool value) : name_(name), type_(Type::BOOL)
+    {
+      string_value_ = value ? "true" : "false";
     }
 
     // Constructor for int
-    Parameter(const std::string &name, int value) : name_(name), type_(Type::INT) {
-        string_value_ = int_to_string(value);
+    Parameter(const std::string &name, int value) : name_(name), type_(Type::INT)
+    {
+      string_value_ = int_to_string(value);
     }
 
     // Constructor for double
-    Parameter(const std::string &name, double value) : name_(name), type_(Type::DOUBLE) {
-        string_value_ = double_to_string(value);
+    Parameter(const std::string &name, double value) : name_(name), type_(Type::DOUBLE)
+    {
+      string_value_ = double_to_string(value);
     }
 
     // Constructor for std::string
-    Parameter(const std::string &name, const std::string &value) : name_(name), type_(Type::STRING) {
-        string_value_ = value;
+    Parameter(const std::string &name, const std::string &value) : name_(name), type_(Type::STRING)
+    {
+      string_value_ = value;
     }
 
     // Constructor for const char*
-    Parameter(const std::string &name, const char* value) : name_(name), type_(Type::STRING) {
-        string_value_ = value;
+    Parameter(const std::string &name, const char *value) : name_(name), type_(Type::STRING)
+    {
+      string_value_ = value;
     }
 
-  // Constructor for bool array
-    Parameter(const std::string &name, const std::vector<bool> &value) : name_(name), type_(Type::BOOL_ARRAY) {
-        string_value_ = vector_to_string(value);
+    // Constructor for bool array
+    Parameter(const std::string &name, const std::vector<bool> &value)
+        : name_(name), type_(Type::BOOL_ARRAY)
+    {
+      string_value_ = vector_to_string(value);
     }
 
     // Constructor for int array
-    Parameter(const std::string &name, const std::vector<int> &value) : name_(name), type_(Type::INT_ARRAY) {
-        string_value_ = vector_to_string(value);
+    Parameter(const std::string &name, const std::vector<int> &value)
+        : name_(name), type_(Type::INT_ARRAY)
+    {
+      string_value_ = vector_to_string(value);
     }
 
     // Constructor for double array
-    Parameter(const std::string &name, const std::vector<double> &value) : name_(name), type_(Type::DOUBLE_ARRAY) {
-        string_value_ = vector_to_string(value);
+    Parameter(const std::string &name, const std::vector<double> &value)
+        : name_(name), type_(Type::DOUBLE_ARRAY)
+    {
+      string_value_ = vector_to_string(value);
     }
 
     // Constructor for std::string array
-    Parameter(const std::string &name, const std::vector<std::string> &value) : name_(name), type_(Type::STRING_ARRAY) {
-        string_value_ = vector_to_string(value);
+    Parameter(const std::string &name, const std::vector<std::string> &value)
+        : name_(name), type_(Type::STRING_ARRAY)
+    {
+      string_value_ = vector_to_string(value);
     }
 
     // Constructor for const char* array
-    Parameter(const std::string &name, std::vector<const char*> &value) : name_(name), type_(Type::STRING_ARRAY) {
-        string_value_ = vector_to_string(value);
+    Parameter(const std::string &name, std::vector<const char *> &value)
+        : name_(name), type_(Type::STRING_ARRAY)
+    {
+      string_value_ = vector_to_string(value);
     }
 
     // Constructor for Byte array
-    Parameter(const std::string &name, const std::vector<uint8_t> &value) : name_(name), type_(Type::BYTE_ARRAY) {
-        string_value_ = vector_to_string(value);
+    Parameter(const std::string &name, const std::vector<uint8_t> &value)
+        : name_(name), type_(Type::BYTE_ARRAY)
+    {
+      string_value_ = vector_to_string(value);
     }
 
     Parameter() : type_(Type::UNKNOWN) {}
@@ -153,11 +167,7 @@ namespace lwrcl
       iss >> double_value;
       return double_value;
     }
-    std::string as_string() const
-    {
-      return string_value_;
-    }
-
+    std::string as_string() const { return string_value_; }
 
     std::vector<bool> as_bool_array() const
     {
@@ -224,49 +234,52 @@ namespace lwrcl
     Type type_;
 
     // Convert int to string
-    static std::string int_to_string(int value) {
-        std::ostringstream oss;
-        oss << value;
-        return oss.str();
+    static std::string int_to_string(int value)
+    {
+      std::ostringstream oss;
+      oss << value;
+      return oss.str();
     }
 
     // Convert double to string
-    static std::string double_to_string(double value) {
-        std::ostringstream oss;
-        oss << value;
-        return oss.str();
+    static std::string double_to_string(double value)
+    {
+      std::ostringstream oss;
+      oss << value;
+      return oss.str();
     }
 
     // Convert vector to string
     template <typename T>
     static std::string vector_to_string(const std::vector<T> &vec)
     {
-        std::ostringstream oss;
-        for (size_t i = 0; i < vec.size(); ++i)
+      std::ostringstream oss;
+      for (size_t i = 0; i < vec.size(); ++i)
+      {
+        if (i > 0)
         {
-            if (i > 0) {
-                oss << ",";
-            }
-            oss << vec[i];
+          oss << ",";
         }
-        return oss.str();
+        oss << vec[i];
+      }
+      return oss.str();
     }
 
     // Convert string to vector
     template <typename T>
     static std::vector<T> string_to_vector(const std::string &str)
     {
-        std::vector<T> vec;
-        std::istringstream iss(str);
-        std::string item;
-        while (std::getline(iss, item, ','))
-        {
-            std::istringstream converter(item);
-            T value;
-            converter >> value;
-            vec.push_back(value);
-        }
-        return vec;
+      std::vector<T> vec;
+      std::istringstream iss(str);
+      std::string item;
+      while (std::getline(iss, item, ','))
+      {
+        std::istringstream converter(item);
+        T value;
+        converter >> value;
+        vec.push_back(value);
+      }
+      return vec;
     }
   };
 
@@ -301,7 +314,8 @@ namespace lwrcl
     template <typename T>
     std::shared_ptr<Publisher<T>> create_publisher(const std::string &topic, const uint16_t &depth)
     {
-      auto publisher = std::make_shared<Publisher<T>>(participant_.get(), std::string("rt/") + topic, depth);
+      auto publisher =
+          std::make_shared<Publisher<T>>(participant_.get(), std::string("rt/") + topic, depth);
       publisher_list_.push_front(publisher);
       return publisher;
     }
@@ -309,66 +323,60 @@ namespace lwrcl
     template <typename T>
     std::shared_ptr<Publisher<T>> create_publisher(const std::string &topic, const QoS &depth)
     {
-      auto publisher = std::make_shared<Publisher<T>>(participant_.get(), std::string("rt/") + topic, depth.get_depth());
+      auto publisher = std::make_shared<Publisher<T>>(
+          participant_.get(), std::string("rt/") + topic, depth.get_depth());
       publisher_list_.push_front(publisher);
       return publisher;
     }
 
     template <typename T>
-    std::shared_ptr<Publisher<T>> create_service_publisher(const std::string &topic)
+    std::shared_ptr<Subscription<T>> create_subscription(
+        const std::string &topic, const uint16_t &depth,
+        std::function<void(std::shared_ptr<T>)> callback_function)
     {
-      auto publisher = std::make_shared<Publisher<T>>(participant_.get(), std::string("rp/") + topic, 1);
-      publisher_list_.push_front(publisher);
-      return publisher;
-    }
-
-    template <typename T>
-    std::shared_ptr<Subscription<T>> create_subscription(const std::string &topic, const uint16_t &depth,
-                                                         std::function<void(std::shared_ptr<T>)> callback_function)
-    {
-      auto subscription = std::make_shared<Subscription<T>>(participant_.get(), std::string("rt/") + topic, depth, callback_function, channel_);
+      auto subscription = std::make_shared<Subscription<T>>(
+          participant_.get(), std::string("rt/") + topic, depth, callback_function, channel_);
       subscription_list_.push_front(subscription);
       return subscription;
     }
 
     template <typename T>
-    std::shared_ptr<Subscription<T>> create_subscription(const std::string &topic, const QoS &depth,
-                                                         std::function<void(std::shared_ptr<T>)> callback_function)
+    std::shared_ptr<Subscription<T>> create_subscription(
+        const std::string &topic, const QoS &depth,
+        std::function<void(std::shared_ptr<T>)> callback_function)
     {
-      auto subscription = std::make_shared<Subscription<T>>(participant_.get(), std::string("rt/") + topic, depth.get_depth(), callback_function, channel_);
-      subscription_list_.push_front(subscription);
-      return subscription;
-    }
-
-    template <typename T>
-    std::shared_ptr<Subscription<T>> create_service_subscription(const std::string &topic, const QoS &depth,
-                                                         std::function<void(std::shared_ptr<T>)> callback_function)
-    {
-      auto subscription = std::make_shared<Subscription<T>>(participant_.get(), std::string("rp/") + topic, 1, callback_function, channel_);
+      auto subscription = std::make_shared<Subscription<T>>(
+          participant_.get(), std::string("rt/") + topic, depth.get_depth(), callback_function,
+          channel_);
       subscription_list_.push_front(subscription);
       return subscription;
     }
 
     template <typename Req, typename Res>
-    std::shared_ptr<Service<Req, Res>> create_service(const std::string &service_name, std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function)
+    std::shared_ptr<Service<Req, Res>> create_service(
+        const std::string &service_name,
+        std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function)
     {
-      std::shared_ptr<Service<Req, Res>> service = std::make_shared<Service>(this->participant_, service_name, callback_function);
+      std::shared_ptr<Service<Req, Res>> service =
+          std::make_shared<Service<Req, Res>>(participant_, service_name, callback_function, channel_);
       service_list_.push_front(service);
 
       return service;
     }
 
     template <typename Req, typename Res>
-    std::shared_ptr<Client<Req,Res>> create_client(const std::string &service_name)
+    std::shared_ptr<Client<Req, Res>> create_client(const std::string &service_name)
     {
-      std::shared_ptr<Client<Req, Res>> client = std::make_shared<Client<Req, Res>>(this->participant_, service_name);
+      std::shared_ptr<Client<Req, Res>> client =
+          std::make_shared<Client<Req, Res>>(participant_, service_name, channel_);
       client_list_.push_front(client);
 
       return client;
     }
 
     template <typename Rep, typename Period>
-    std::shared_ptr<TimerBase> create_timer(std::chrono::duration<Rep, Period> period, std::function<void()> callback_function)
+    std::shared_ptr<TimerBase> create_timer(
+        std::chrono::duration<Rep, Period> period, std::function<void()> callback_function)
     {
       lwrcl::Clock::ClockType clock_type = Clock::ClockType::SYSTEM_TIME;
       auto duration = Duration(period);
@@ -378,7 +386,8 @@ namespace lwrcl
     }
 
     template <typename Rep, typename Period>
-    std::shared_ptr<TimerBase> create_wall_timer(std::chrono::duration<Rep, Period> period, std::function<void()> callback_function)
+    std::shared_ptr<TimerBase> create_wall_timer(
+        std::chrono::duration<Rep, Period> period, std::function<void()> callback_function)
     {
       lwrcl::Clock::ClockType clock_type = Clock::ClockType::STEADY_TIME;
       auto duration = Duration(period);
@@ -390,8 +399,11 @@ namespace lwrcl
     static std::shared_ptr<Node> make_shared(int domain_id);
     static std::shared_ptr<Node> make_shared(int domain_id, const std::string &name);
     static std::shared_ptr<Node> make_shared(const std::string &name);
-    static std::shared_ptr<Node> make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
-    static std::shared_ptr<Node> make_shared(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name);
+    static std::shared_ptr<Node> make_shared(
+        std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
+    static std::shared_ptr<Node> make_shared(
+        std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant,
+        const std::string &name);
 
     friend void lwrcl::spin(std::shared_ptr<Node> node);
     friend void lwrcl::spin_some(std::shared_ptr<Node> node);
@@ -400,7 +412,9 @@ namespace lwrcl
     virtual Clock::SharedPtr get_clock();
 
     Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
-    Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name);
+    Node(
+        std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant,
+        const std::string &name);
     virtual ~Node();
 
     void set_parameters(const std::vector<std::shared_ptr<ParameterBase>> &parameters)
@@ -535,7 +549,7 @@ namespace lwrcl
       node_parameters[node_name][name] = Parameter(name, default_value);
     }
 
-    void declare_parameter(const std::string &name, const char* default_value)
+    void declare_parameter(const std::string &name, const char *default_value)
     {
       std::string node_name = this->get_name();
 
@@ -737,6 +751,8 @@ namespace lwrcl
     }
 
     int closed_;
+    void stop_spin();
+    bool stop_flag_;
 
   private:
     virtual void spin();
@@ -754,7 +770,8 @@ namespace lwrcl
       {
         if (participant != nullptr)
         {
-          eprosima::fastdds::dds::DomainParticipantFactory::get_instance()->delete_participant(participant);
+          eprosima::fastdds::dds::DomainParticipantFactory::get_instance()->delete_participant(
+              participant);
         }
       }
     };
@@ -860,50 +877,62 @@ namespace lwrcl
   private:
     std::string node_name_;
   };
-    class IService
+
+  class IService
   {
   public:
     virtual ~IService() = default;
     virtual void stop() = 0;
   };
-  
+
   template <typename Req, typename Res>
-  class Service : public IService, public std::enable_shared_from_this<Service<Req, Res>> {
+  class Service : public IService, public std::enable_shared_from_this<Service<Req, Res>>
+  {
   public:
-      using SharedPtr = std::shared_ptr<Service>;
+    using SharedPtr = std::shared_ptr<Service>;
 
-      Service(std::shared_ptr<lwrcl::Node> node, const std::string &service_name, std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function)
-          : node_(node), service_name_(service_name), callback_function_(callback_function) {
-          // Create topic
-          request_topic_name_ = service_name_ + "_Request";
-          response_topic_name_ = service_name_ + "_Response";
-          publisher_ = node_->create_service_publisher<Res>(response_topic_name_);
-          request_callback_function_ = [this](std::shared_ptr<Req> request) {
-              std::shared_ptr<Res> response = std::make_shared<Res>();
-              callback_function_(request, response);
-              publisher_->publish(response);
-          };
-          subscription_ = node_->create_service_subscription<Req>(request_topic_name_, 1, request_callback_function_);
-      }
+    Service(
+        std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant,
+        const std::string &service_name,
+        std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function,
+        std::shared_ptr<Channel<ChannelCallback *>> channel)
+        : participant_(participant), service_name_(service_name), callback_function_(callback_function), channel_(channel)
+    {
 
-      ~Service() {} // Destructor
+      // Create topic
+      request_topic_name_ = service_name_ + "_Request";
+      response_topic_name_ = service_name_ + "_Response";
 
-      void stop() override
+      publisher_ = std::make_shared<Publisher<Res>>(
+          participant_.get(), std::string("rp/") + response_topic_name_, 1);
+
+      request_callback_function_ = [this](std::shared_ptr<Req> request)
       {
-          subscription_->stop();
-      }
+        std::shared_ptr<Res> response = std::make_shared<Res>();
+        callback_function_(request, response);
+        publisher_->publish(response);
+      };
+
+      subscription_ = std::make_shared<Subscription<Req>>(
+          participant_.get(), std::string("rp/") + request_topic_name_, 1, request_callback_function_,
+          channel_);
+    }
+
+    ~Service() {} // Destructor
+
+    void stop() override { subscription_->stop(); }
 
   private:
-      std::shared_ptr<lwrcl::Node> node_;
-      std::string service_name_;
-      std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function_;
-      std::function<void(std::shared_ptr<Req>)> request_callback_function_;
-      std::shared_ptr<Publisher<Res>> publisher_;
-      std::shared_ptr<Subscription<Req>> subscription_;
-      std::string request_topic_name_;
-      std::string response_topic_name_;
+    std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant_;
+    std::string service_name_;
+    std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function_;
+    std::function<void(std::shared_ptr<Req>)> request_callback_function_;
+    std::shared_ptr<Publisher<Res>> publisher_;
+    std::shared_ptr<Subscription<Req>> subscription_;
+    std::string request_topic_name_;
+    std::string response_topic_name_;
+    Channel<ChannelCallback *>::SharedPtr channel_;
   };
-
 
   class IClient
   {
@@ -911,43 +940,122 @@ namespace lwrcl
     virtual ~IClient() = default;
     virtual void stop() = 0;
   };
-  
+
+  enum FutureReturnCode
+  {
+    SUCCESS,
+    INTERRUPTED,
+    TIMEOUT
+  };
+
+  class FutureBase
+  {
+  public:
+    virtual ~FutureBase() = default;
+    virtual std::future_status wait_for(std::chrono::milliseconds timeout) = 0;
+  };
+
+  template <typename Res>
+  class TypedFuture : public FutureBase
+  {
+  public:
+    TypedFuture(std::shared_future<std::shared_ptr<Res>> future)
+        : future_(future) {}
+
+    std::future_status wait_for(std::chrono::milliseconds timeout) override
+    {
+      return future_.wait_for(timeout);
+    }
+
+  private:
+    std::shared_future<std::shared_ptr<Res>> future_;
+  };
+
   template <typename Req, typename Res>
   class Client : public IClient, public std::enable_shared_from_this<Client<Req, Res>>
   {
   public:
     using SharedPtr = std::shared_ptr<Client>;
 
-    Client(std::shared_ptr<Node> node, const std::string &service_name)
-        : node_(node), service_name_(service_name), response_(nullptr), response_callback_function_(nullptr)
-        {
-          // Create topic
-          request_topic_name_ = service_name_ + "_Request";
-          response_topic_name_ = service_name_ + "_Response";
-          publisher_ = node_->create_service_publisher<Req>(request_topic_name_);
-          subscription_ = node_->create_service_subscription<Res>(response_topic_name_, 1, std::bind(&Client::handle_response, this, std::placeholders::_1));
-        }
-    ~Client() {} // Destructor
+    Client(
+        std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant,
+        const std::string &service_name,
+        std::shared_ptr<Channel<ChannelCallback *>> channel)
+        : participant_(participant),
+          service_name_(service_name),
+          channel_(channel),
+          response_(nullptr),
+          response_callback_function_(nullptr)
+    {
 
-    void handle_response(std::shared_ptr<Res> response) {
-      if (response_callback_function_) {
+      // Create topic
+      request_topic_name_ = service_name_ + "_Request";
+      response_topic_name_ = service_name_ + "_Response";
+
+      publisher_ = std::make_shared<Publisher<Req>>(
+          participant_.get(), std::string("rp/") + request_topic_name_, 1);
+
+      subscription_ = std::make_shared<Subscription<Res>>(
+          participant_.get(), std::string("rp/") + response_topic_name_, 1,
+          std::function<void(std::shared_ptr<Res>)>(
+              std::bind(&Client::handle_response, this, std::placeholders::_1)),
+          channel_);
+    }
+    ~Client()
+    {
+    } // Destructor
+
+    void handle_response(std::shared_ptr<Res> response)
+    {
+      if (response_callback_function_)
+      {
         response_callback_function_(response);
       }
+      std::lock_guard<std::mutex> lock(mutex_);
+      response_ = response;
+      response_received_ = true;
+
+      cv_.notify_one();
     }
 
-    void stop() override
-    {
-      subscription_->stop();
-    }
+    void stop() override { subscription_->stop(); }
 
-    void async_send_request(std::shared_ptr<Req> request, std::function<void(std::shared_ptr<Res>)> callback_function)
+    std::shared_ptr<FutureBase> async_send_request(std::shared_ptr<Req> request)
     {
-      response_callback_function_ = callback_function;
+      auto promise = std::make_shared<std::promise<std::shared_ptr<Res>>>();
+      auto future = promise->get_future().share();
+
+      response_callback_function_ = [promise](std::shared_ptr<void> response) mutable
+      {
+        promise->set_value(std::static_pointer_cast<Res>(response));
+      };
+
       publisher_->publish(request);
+
+      return std::make_shared<TypedFuture<Res>>(future);
     }
+
+    // void spin() {
+
+    //   while (!response_received_)
+    //   {
+    //     ChannelCallback *callback;
+    //     while (channel_->consume(callback))
+    //     {
+    //       if (callback)
+    //       {
+    //         callback->invoke();
+    //       }
+    //       else
+    //       {
+    //         break;
+    //       }
+    //     }
+    //   }
+    // }
 
     template <typename Duration>
-    bool wait_for_service(const Duration& timeout)
+    bool wait_for_service(const Duration &timeout)
     {
       std::chrono::system_clock::time_point start_time = std::chrono::system_clock::now();
       std::chrono::system_clock::time_point current_time = std::chrono::system_clock::now();
@@ -967,7 +1075,7 @@ namespace lwrcl
     }
 
   private:
-    std::shared_ptr<Node> node_;
+    std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant_;
     std::string service_name_;
     std::shared_ptr<Publisher<Req>> publisher_;
     std::shared_ptr<Subscription<Res>> subscription_;
@@ -975,8 +1083,34 @@ namespace lwrcl
     std::string response_topic_name_;
     std::function<void(std::shared_ptr<Res>)> response_callback_function_;
     std::shared_ptr<Res> response_;
-  };
+    Channel<ChannelCallback *>::SharedPtr channel_;
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    bool response_received_ = false;
+  }; //
 
+  template <typename Duration>
+  FutureReturnCode spin_until_future_complete(
+      std::shared_ptr<lwrcl::Node> node,
+      std::shared_ptr<FutureBase> future,
+      const Duration &timeout)
+  {
+    std::thread spin_thread([node]()
+                            { lwrcl::spin(node); });
+
+    if (future->wait_for(std::chrono::duration_cast<std::chrono::milliseconds>(timeout)) == std::future_status::ready)
+    {
+      node->stop_spin();
+      spin_thread.join();
+      return SUCCESS;
+    }
+    else
+    {
+      node->stop_spin();
+      spin_thread.join();
+      return TIMEOUT;
+    }
+  }
 } // namespace lwrcl
 
 #define LWRCL_DEBUG(logger, ...) (logger).log(lwrcl::DEBUG, __VA_ARGS__)

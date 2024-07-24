@@ -593,10 +593,11 @@ namespace lwrcl
 
   void Node::spin()
   {
-    while (closed_ == 0 && global_stop_flag.load() == false)
+    stop_flag_ = false;
+    while (closed_ == 0 && global_stop_flag.load() == false && stop_flag_ == false)
     {
       ChannelCallback *callback;
-      while (channel_->consume(callback) && global_stop_flag.load() == false)
+      while (channel_->consume(callback) && global_stop_flag.load() == false && stop_flag_ == false)
       {
         if (callback)
         {
@@ -608,6 +609,11 @@ namespace lwrcl
         }
       }
     }
+  }
+
+  void Node::stop_spin()
+  {
+    stop_flag_ = true;
   }
 
   void Node::spin_some()

@@ -14,12 +14,21 @@ namespace rclcpp {
     using Rate = lwrcl::Rate;
     using WallRate = lwrcl::WallRate;
     using Parameter = lwrcl::Parameter;
+    template <typename Req, typename Res>
+    using Service = ::lwrcl::Service<Req, Res>;
+    template <typename Req, typename Res>
+    using Client = ::lwrcl::Client<Req, Res>;
+    using FutureBase = lwrcl::FutureBase;
+    template <typename Res>
+    using TypedFuture = ::lwrcl::TypedFuture<Res>;
+    using FutureReturnCode = lwrcl::FutureReturnCode;
     template <typename MessageType>
     using Subscription = ::lwrcl::Subscription<MessageType>;
     template <typename MessageType>
     using Publisher = ::lwrcl::Publisher<MessageType>;
     
     using TimerBase = lwrcl::TimerBase;
+    
 
     inline bool ok() {
         return lwrcl::ok();
@@ -38,6 +47,11 @@ namespace rclcpp {
     }
     inline void init(int argc, char *argv[]) {
         return lwrcl::init(argc, argv);
+    }
+    template <typename Duration>
+    inline FutureReturnCode spin_until_future_complete(std::shared_ptr<Node> node,
+      std::shared_ptr<FutureBase> future, const Duration & timeout){
+        return lwrcl::spin_until_future_complete(node, future, timeout);
     }
 }
 
