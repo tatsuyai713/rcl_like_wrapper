@@ -1,6 +1,5 @@
 #include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/srv/set_camera_info_request.hpp"
-#include "sensor_msgs/srv/set_camera_info_response.hpp"
+#include "sensor_msgs/srv/set_camera_info.hpp"
 
 using namespace std::chrono_literals;
 
@@ -9,8 +8,7 @@ class CameraInfoClient : public rclcpp::Node
 public:
   CameraInfoClient() : Node("camera_info_client")
   {
-    client_ = this->create_client<
-        sensor_msgs::srv::SetCameraInfo_Request, sensor_msgs::srv::SetCameraInfo_Response>(
+    client_ = this->create_client<sensor_msgs::srv::SetCameraInfo>(
         "camera_info_service");
   }
 
@@ -44,9 +42,7 @@ public:
   }
 
 private:
-  rclcpp::Client<
-      sensor_msgs::srv::SetCameraInfo_Request, sensor_msgs::srv::SetCameraInfo_Response>::SharedPtr
-      client_;
+  rclcpp::Client<sensor_msgs::srv::SetCameraInfo>::SharedPtr client_;
 };
 
 int main(int argc, char *argv[])

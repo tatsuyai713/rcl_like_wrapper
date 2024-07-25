@@ -32,9 +32,9 @@ namespace lwrcl
   class Node;
   class IService;
   class IClient;
-  template <typename Req, typename Res>
+  template <typename T>
   class Service;
-  template <typename Req, typename Res>
+  template <typename T>
   class Client;
 
   // lwrcl functions
@@ -352,23 +352,23 @@ namespace lwrcl
       return subscription;
     }
 
-    template <typename Req, typename Res>
-    std::shared_ptr<Service<Req, Res>> create_service(
+    template <typename T>
+    std::shared_ptr<Service<T>> create_service(
         const std::string &service_name,
-        std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function)
+        std::function<void(std::shared_ptr<typename T::Request>, std::shared_ptr<typename T::Response>)> callback_function)
     {
-      std::shared_ptr<Service<Req, Res>> service =
-          std::make_shared<Service<Req, Res>>(participant_, service_name, callback_function, channel_);
+      std::shared_ptr<Service<T>> service =
+          std::make_shared<Service<T>>(participant_, service_name, callback_function, channel_);
       service_list_.push_front(service);
 
       return service;
     }
 
-    template <typename Req, typename Res>
-    std::shared_ptr<Client<Req, Res>> create_client(const std::string &service_name)
+    template <typename T>
+    std::shared_ptr<Client<T>> create_client(const std::string &service_name)
     {
-      std::shared_ptr<Client<Req, Res>> client =
-          std::make_shared<Client<Req, Res>>(participant_, service_name, channel_);
+      std::shared_ptr<Client<T>> client =
+          std::make_shared<Client<T>>(participant_, service_name, channel_);
       client_list_.push_front(client);
 
       return client;
@@ -885,8 +885,8 @@ namespace lwrcl
     virtual void stop() = 0;
   };
 
-  template <typename Req, typename Res>
-  class Service : public IService, public std::enable_shared_from_this<Service<Req, Res>>
+  template <typename T>
+  class Service : public IService, public std::enable_shared_from_this<Service<T>>
   {
   public:
     using SharedPtr = std::shared_ptr<Service>;
@@ -894,7 +894,7 @@ namespace lwrcl
     Service(
         std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant,
         const std::string &service_name,
-        std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function,
+        std::function<void(std::shared_ptr<typename T::Request>, std::shared_ptr<typename T::Response>)> callback_function,
         std::shared_ptr<Channel<ChannelCallback *>> channel)
         : participant_(participant), service_name_(service_name), callback_function_(callback_function), channel_(channel)
     {
@@ -903,17 +903,17 @@ namespace lwrcl
       request_topic_name_ = service_name_ + "_Request";
       response_topic_name_ = service_name_ + "_Response";
 
-      publisher_ = std::make_shared<Publisher<Res>>(
+      publisher_ = std::make_shared<Publisher<typename T::Response>>(
           participant_.get(), std::string("rp/") + response_topic_name_, 1);
 
-      request_callback_function_ = [this](std::shared_ptr<Req> request)
+      request_callback_function_ = [this](std::shared_ptr<typename T::Request> request)
       {
-        std::shared_ptr<Res> response = std::make_shared<Res>();
+        std::shared_ptr<typename T::Response> response = std::make_shared<typename T::Response> ();
         callback_function_(request, response);
         publisher_->publish(response);
       };
 
-      subscription_ = std::make_shared<Subscription<Req>>(
+      subscription_ = std::make_shared<Subscription<typename T::Request>>(
           participant_.get(), std::string("rp/") + request_topic_name_, 1, request_callback_function_,
           channel_);
     }
@@ -925,10 +925,10 @@ namespace lwrcl
   private:
     std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant_;
     std::string service_name_;
-    std::function<void(std::shared_ptr<Req>, std::shared_ptr<Res>)> callback_function_;
-    std::function<void(std::shared_ptr<Req>)> request_callback_function_;
-    std::shared_ptr<Publisher<Res>> publisher_;
-    std::shared_ptr<Subscription<Req>> subscription_;
+    std::function<void(std::shared_ptr<typename T::Request>, std::shared_ptr<typename T::Response>)> callback_function_;
+    std::function<void(std::shared_ptr<typename T::Request>)> request_callback_function_;
+    std::shared_ptr<Publisher<typename T::Response>> publisher_;
+    std::shared_ptr<Subscription<typename T::Request>> subscription_;
     std::string request_topic_name_;
     std::string response_topic_name_;
     Channel<ChannelCallback *>::SharedPtr channel_;
@@ -955,11 +955,11 @@ namespace lwrcl
     virtual std::future_status wait_for(std::chrono::milliseconds timeout) = 0;
   };
 
-  template <typename Res>
+  template <typename T>
   class TypedFuture : public FutureBase
   {
   public:
-    TypedFuture(std::shared_future<std::shared_ptr<Res>> future)
+    TypedFuture(std::shared_future<std::shared_ptr<T>> future)
         : future_(future) {}
 
     std::future_status wait_for(std::chrono::milliseconds timeout) override
@@ -968,11 +968,11 @@ namespace lwrcl
     }
 
   private:
-    std::shared_future<std::shared_ptr<Res>> future_;
+    std::shared_future<std::shared_ptr<T>> future_;
   };
 
-  template <typename Req, typename Res>
-  class Client : public IClient, public std::enable_shared_from_this<Client<Req, Res>>
+  template <typename T>
+  class Client : public IClient, public std::enable_shared_from_this<Client<T>>
   {
   public:
     using SharedPtr = std::shared_ptr<Client>;
@@ -992,12 +992,12 @@ namespace lwrcl
       request_topic_name_ = service_name_ + "_Request";
       response_topic_name_ = service_name_ + "_Response";
 
-      publisher_ = std::make_shared<Publisher<Req>>(
+      publisher_ = std::make_shared<Publisher<typename T::Request>>(
           participant_.get(), std::string("rp/") + request_topic_name_, 1);
 
-      subscription_ = std::make_shared<Subscription<Res>>(
+      subscription_ = std::make_shared<Subscription<typename T::Response>>(
           participant_.get(), std::string("rp/") + response_topic_name_, 1,
-          std::function<void(std::shared_ptr<Res>)>(
+          std::function<void(std::shared_ptr<typename T::Response> )>(
               std::bind(&Client::handle_response, this, std::placeholders::_1)),
           channel_);
     }
@@ -1005,7 +1005,7 @@ namespace lwrcl
     {
     } // Destructor
 
-    void handle_response(std::shared_ptr<Res> response)
+    void handle_response(std::shared_ptr<typename T::Response> response)
     {
       if (response_callback_function_)
       {
@@ -1020,39 +1020,20 @@ namespace lwrcl
 
     void stop() override { subscription_->stop(); }
 
-    std::shared_ptr<FutureBase> async_send_request(std::shared_ptr<Req> request)
+    std::shared_ptr<FutureBase> async_send_request(std::shared_ptr<typename T::Request>  request)
     {
-      auto promise = std::make_shared<std::promise<std::shared_ptr<Res>>>();
+      auto promise = std::make_shared<std::promise<std::shared_ptr<typename T::Response>>>();
       auto future = promise->get_future().share();
 
       response_callback_function_ = [promise](std::shared_ptr<void> response) mutable
       {
-        promise->set_value(std::static_pointer_cast<Res>(response));
+        promise->set_value(std::static_pointer_cast<typename T::Response>(response));
       };
 
       publisher_->publish(request);
 
-      return std::make_shared<TypedFuture<Res>>(future);
+      return std::make_shared<TypedFuture<typename T::Response>>(future);
     }
-
-    // void spin() {
-
-    //   while (!response_received_)
-    //   {
-    //     ChannelCallback *callback;
-    //     while (channel_->consume(callback))
-    //     {
-    //       if (callback)
-    //       {
-    //         callback->invoke();
-    //       }
-    //       else
-    //       {
-    //         break;
-    //       }
-    //     }
-    //   }
-    // }
 
     template <typename Duration>
     bool wait_for_service(const Duration &timeout)
@@ -1077,12 +1058,12 @@ namespace lwrcl
   private:
     std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant_;
     std::string service_name_;
-    std::shared_ptr<Publisher<Req>> publisher_;
-    std::shared_ptr<Subscription<Res>> subscription_;
+    std::shared_ptr<Publisher<typename T::Request>> publisher_;
+    std::shared_ptr<Subscription<typename T::Response>> subscription_;
     std::string request_topic_name_;
     std::string response_topic_name_;
-    std::function<void(std::shared_ptr<Res>)> response_callback_function_;
-    std::shared_ptr<Res> response_;
+    std::function<void(std::shared_ptr<typename T::Response>)> response_callback_function_;
+    std::shared_ptr<typename T::Response> response_;
     Channel<ChannelCallback *>::SharedPtr channel_;
     std::mutex mutex_;
     std::condition_variable cv_;

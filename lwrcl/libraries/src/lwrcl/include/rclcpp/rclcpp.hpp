@@ -14,13 +14,13 @@ namespace rclcpp {
     using Rate = lwrcl::Rate;
     using WallRate = lwrcl::WallRate;
     using Parameter = lwrcl::Parameter;
-    template <typename Req, typename Res>
-    using Service = ::lwrcl::Service<Req, Res>;
-    template <typename Req, typename Res>
-    using Client = ::lwrcl::Client<Req, Res>;
+    template <typename T>
+    using Service = ::lwrcl::Service<T>;
+    template <typename T>
+    using Client = ::lwrcl::Client<T>;
     using FutureBase = lwrcl::FutureBase;
-    template <typename Res>
-    using TypedFuture = ::lwrcl::TypedFuture<Res>;
+    template <typename T>
+    using TypedFuture = ::lwrcl::TypedFuture<T>;
     using FutureReturnCode = lwrcl::FutureReturnCode;
     template <typename MessageType>
     using Subscription = ::lwrcl::Subscription<MessageType>;
