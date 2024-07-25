@@ -8,8 +8,7 @@ class CameraInfoClient : public rclcpp::Node
 public:
   CameraInfoClient() : Node("camera_info_client")
   {
-    client_ = this->create_client<sensor_msgs::srv::SetCameraInfo>(
-        "camera_info_service");
+    client_ = this->create_client<sensor_msgs::srv::SetCameraInfo>("camera_info_service");
   }
 
   void process()
@@ -23,7 +22,7 @@ public:
       RCLCPP_INFO(this->get_logger(), "Service is currently not available... waiting.");
     }
 
-    auto request = std::make_shared<sensor_msgs::srv::SetCameraInfo_Request>();
+    auto request = std::make_shared<sensor_msgs::srv::SetCameraInfo::Request>();
 
     auto result = client_->async_send_request(request);
 

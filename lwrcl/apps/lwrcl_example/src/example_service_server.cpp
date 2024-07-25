@@ -8,8 +8,7 @@ class CameraInfoServer : public rclcpp::Node
 public:
   CameraInfoServer() : Node("camera_info_server")
   {
-    server_ = this->create_service<sensor_msgs::srv::SetCameraInfo>(
-      "camera_info_service",
+    server_ = this->create_service<sensor_msgs::srv::SetCameraInfo>("camera_info_service",
       std::bind(&CameraInfoServer::service_callback, this, std::placeholders::_1, std::placeholders::_2));
 
     RCLCPP_INFO(this->get_logger(), "Create CameraInfo service server.");
@@ -18,8 +17,8 @@ public:
 private:
   void service_callback
   (
-    const std::shared_ptr<sensor_msgs::srv::SetCameraInfo_Request> request,
-    std::shared_ptr<sensor_msgs::srv::SetCameraInfo_Response> response)
+    const std::shared_ptr<sensor_msgs::srv::SetCameraInfo::Request> request,
+    std::shared_ptr<sensor_msgs::srv::SetCameraInfo::Response> response)
   {
     RCLCPP_INFO(this->get_logger(), "Received request.");
   }
