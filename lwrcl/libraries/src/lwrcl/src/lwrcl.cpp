@@ -751,7 +751,7 @@ namespace lwrcl
 
   NodeParameters node_parameters;
 
-  void loadParameters(const std::string &file_path)
+  void load_parameters(const std::string &file_path)
   {
     YAML::Node config = YAML::LoadFile(file_path);
 
@@ -813,7 +813,7 @@ namespace lwrcl
       if (!params_file_path.empty())
       {
         std::cout << "Loading parameters from file: " << params_file_path << std::endl;
-        loadParameters(params_file_path);
+        load_parameters(params_file_path);
       }
     }
     catch (const YAML::Exception &e)

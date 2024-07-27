@@ -777,7 +777,7 @@ namespace lwrcl
     };
 
     std::string get_params_file_path(int argc, char *argv[]);
-    void loadParameters(const std::string &file_path);
+    void load_parameters(const std::string &file_path);
 
     std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant_;
     Channel<ChannelCallback *>::SharedPtr channel_;
