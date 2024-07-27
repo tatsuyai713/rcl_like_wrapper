@@ -6,19 +6,20 @@ OPT_NUM=$#
 # clean
 if [ ! $OPT_NUM -ne 1 ]; then
   if [ "clean" = $OPT ]; then
-    sudo rm -rf ./data_types/build
-    mkdir -p ./data_types/build
+    sudo rm -rf ./lwrcl/build
+    mkdir -p ./lwrcl/build
     exit
   fi
 fi
 
-cd data_types
+cd lwrcl
 mkdir build
 cd build
 DDS_PATH=/opt/fast-dds
 INSTALL_PATH=/opt/fast-dds-libs
 sudo mkdir -p $INSTALL_PATH
 
+sudo rm $INSTALL_PATH/include/lwrcl.hpp
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$DDS_PATH/lib
 
 cmake ..  -DCMAKE_BUILD_TYPE=Debug \
@@ -36,6 +37,7 @@ make -j4
 if [ ! $OPT_NUM -ne 1 ]; then
 	if [ "install" = $OPT ]; then
     sudo make install
+    sudo cp ../src/lwrcl/fastdds.xml $DDS_PATH/
 	fi
 
 fi

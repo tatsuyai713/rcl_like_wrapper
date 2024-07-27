@@ -39,7 +39,4 @@ else()
     link_directories(/opt/fast-dds-libs/lib)
 endif()
 
-add_subdirectory(src/tf2)
-add_subdirectory(src/tf2_ros)
-add_subdirectory(src/domain_participant_counter)
-add_subdirectory(src/yaml-cpp)
+add_subdirectory(src/lwrcl)
