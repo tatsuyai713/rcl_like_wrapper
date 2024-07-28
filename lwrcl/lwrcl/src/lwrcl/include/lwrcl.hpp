@@ -25,8 +25,6 @@
 
 namespace lwrcl
 {
-  extern void lwrcl_signal_handler(int signal);
-
   class Logger;
   class QoS;
   class Node;
@@ -61,7 +59,8 @@ namespace lwrcl
   // Load parameters from file
   std::string get_params_file_path(int argc, char *argv[]);
   void load_parameters(const std::string &file_path);
-  // void log(LogLevel level, const char *format, ...);
+  // Signal handler
+  extern void lwrcl_signal_handler(int signal);
 
   // Base class for different parameter types
   class ParameterBase
