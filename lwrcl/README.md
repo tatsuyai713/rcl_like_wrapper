@@ -16,9 +16,20 @@ This library provides a simplified API similar to ROS 2's rclcpp for working wit
   
 ### Node Management
 
+- **get_name**: Retrieves the name of the node.
+- **get_clock**: Returns the clock associated with the node.
+- **create_publisher**: Establishes a new message publisher on a specified topic.
+- **create_subscription**: Creates a subscription for receiving messages on a specified topic with a callback function.
+- **create_timer**: Sets up a system clock timer to call a function at a specified interval.
+- **create_wall_timer**: Sets up a monotonic timer to call a function at a specified interval.
+- **make_shared**: Creates a shared pointer to a new node.
 - **spin**: Continuously processes incoming messages and executes callbacks.
 - **spin_some**: Processes available messages without blocking.
+- **stop_spin**: Stops the continuous message processing loop.
 - **shutdown**: Stops the continuous message processing loop.
+- **set_parameter**: Sets a parameter value for the specified node.
+- **get_parameter**: Retrieves the value of a parameter for the specified node.
+- **declare_parameter**: Declares a parameter for the specified node.
 
 ### Publisher
 
@@ -87,6 +98,23 @@ The `Rate` class is designed to maintain a specified rate of loop iteration, usi
 
 These classes provide a foundational framework for precise time management and rate control in the system, allowing for time-based scheduling and execution control.
 
+### Parameter Server
+
+The `ParameterServer` class provides a centralized storage mechanism for managing parameters within the Fast DDS ecosystem. It allows nodes to set, get, and declare parameters, enabling efficient parameter management across multiple nodes.
+
+### Parameter Client
+
+The `ParameterClient` class enables nodes to access and interact with parameters stored in the `ParameterServer`. It provides methods for retrieving parameter values, checking parameter existence, and updating parameter values.
+
+### QoS Profiles
+
+User can define QoS depth for publishers and subscribers. The QoS depth determines the maximum number of messages that can be stored in the queue before messages are dropped.
+
+### Logging
+
+The `Logger` class provides a simple logging mechanism for printing messages to the console. It supports different log levels, including `DEBUG`, `INFO`, `WARN`, and `ERROR`, allowing users to control the verbosity of log messages.
+
+
 # Executors for Fast DDS
 
 Executors play a crucial role in the RCL-like wrapper for Fast DDS, allowing for concurrent message processing and event handling across multiple nodes. Inspired by the ROS 2 executor concept, these executors facilitate the management and operation of nodes, enabling efficient communication within the Fast DDS ecosystem.
@@ -103,60 +131,50 @@ The `SingleThreadedExecutor` manages and spins multiple nodes sequentially withi
 
 ### Key Functions
 
-- **add_node(Node* node):** Integrates a node into the executor's workflow.
-- **remove_node(Node* node):** Detaches a node from the executor.
+- **add_node(std::shared_ptr\<Node\> node):** Integrates a node into the executor's workflow.
+- **remove_node(std::shared_ptr\<Node\> node):** Detaches a node from the executor.
 - **spin():** Begins the sequential processing of messages for all nodes managed by the executor.
 - **cancel():** Halts the processing loop, ensuring all nodes are gracefully stopped.
 
-## MultiThreadedExecutor
+## Executors for Fast DDS
 
-The `MultiThreadedExecutor` extends the functionality of the SingleThreadedExecutor by allowing nodes to be spun in parallel across multiple threads. This executor is capable of handling more complex systems where tasks need to run concurrently, optimizing performance and responsiveness.
+Executors are a key component of the Fast DDS ecosystem, enabling the concurrent processing of messages and events across multiple nodes. By managing the execution of nodes within a single or multiple threads, executors provide a flexible and efficient way to handle communication and data processing tasks.
 
 ### Features
 
-- **Concurrent Processing:** Enables nodes to process messages and handle events simultaneously across different threads.
-- **Scalability:** Efficiently manages a larger number of nodes, making it suitable for more complex applications.
+- **Concurrent Processing:** Allows nodes to run in parallel, optimizing performance and responsiveness.
+- **Scalability:** Efficiently manages a larger number of nodes, making it suitable for complex systems.
 - **Flexibility:** Offers the ability to handle variable loads and tasks that are independent of each other.
 - **Use Case:** Best for applications requiring real-time processing or when multiple nodes need to operate independently without blocking each other.
 
+### MultiThreadedExecutor
+
+The `MultiThreadedExecutor` extends the functionality of the SingleThreadedExecutor by allowing nodes to be spun in parallel across multiple threads. This executor is capable of handling more complex systems where tasks need to run concurrently, optimizing performance and responsiveness.
+
+### SingleThreadedExecutor
+
+The `SingleThreadedExecutor` manages and spins multiple nodes sequentially within a single thread. This executor is designed for simplicity and is best suited for scenarios where tasks need to be executed in a specific order without the overhead of multi-threading.
+
 ### Key Functions
 
-- **add_node(Node* node):** Adds a node to be managed concurrently by the executor.
-- **remove_node(Node* node):** Removes a node from the concurrent processing pool.
+- **add_node(std::shared_ptr\<Node\> node):** Adds a node to be managed concurrently by the executor.
+- **remove_node(std::shared_ptr\<Node\> node):** Removes a node from the concurrent processing pool.
 - **spin():** Starts concurrent message processing for all nodes, leveraging multi-threading to achieve parallel execution.
 - **cancel():** Stops all threads and ensures a clean shutdown of node operations.
 
-## Choosing Between Executors
+## Compatibility with ROS 2
 
-- **SingleThreadedExecutor** is recommended for simpler or linear workflows where task order is important and system resources are limited.
-- **MultiThreadedExecutor** is ideal for complex, real-time systems requiring parallel data processing and where tasks can safely execute independently of one another.
+User can use `rclcpp` namespace for using `lwrcl` library. This allows for seamless integration with ROS 2 topics and messages, enabling communication between nodes in the Fast DDS ecosystem and the ROS 2 environment.
 
-By selecting the appropriate executor based on your application's requirements, you can optimize your Fast DDS application for performance, simplicity, or a balance of both.
+### ROS 2 Compatible Data Types
 
-## Node : Enhanced Node Management
+This repository contains a set of ROS 2 compatible data types that can be used with the `lwrcl` library. These data types are designed to be compatible with ROS 2 messages, allowing for easy communication between nodes in the Fast DDS ecosystem and the ROS 2 environment.
 
-`Node` provides an abstraction layer for creating and managing nodes within the Fast DDS ecosystem, mirroring the functionality found in ROS 2's `rclcpp::Node`. It simplifies the interaction with the underlying DDS layer, offering a user-friendly interface for developing distributed systems that communicate over DDS.
+### ROS 2 Compatible Custom Messages
 
-### Key Features
+User can define custom messages that are compatible with ROS 2 message types. These custom messages can be used with the `lwrcl` library to facilitate communication between nodes in the Fast DDS ecosystem and the ROS 2 environment.
 
-- **Simplified Node Creation**: Facilitates the setup of DDS nodes by abstracting away the complexity of DDS configurations.
-- **Message Publishing and Subscription**: Offers easy-to-use methods for publishing messages to topics and subscribing to topics with callback functions for received messages.
-- **Timer Management**: Allows the scheduling of periodic tasks, making it easier to handle time-driven operations.
-- **Executors Compatibility**: Designed to work seamlessly with the `Executors` for concurrent message processing across multiple nodes.
 
-### Using Node with Executors
-
-Integrating `Node` with Executors in the Fast DDS environment facilitates the effective management and operation of multiple nodes. This setup is essential for developing distributed applications that require efficient multitasking and the ability to handle messages from multiple sources in parallel. The use of Executors, specifically the `SingleThreadedExecutor` and `MultiThreadedExecutor`, plays a pivotal role in how messages are processed and how nodes communicate within a Fast DDS domain.
-
-#### SingleThreadedExecutor vs. MultiThreadedExecutor
-
-- **SingleThreadedExecutor**: This executor processes messages for all nodes sequentially in a single thread. It is simpler and easier to debug but might not be suitable for applications requiring high-throughput message processing or real-time responsiveness. It ensures that message callbacks for each node are executed in the order they are received, which can be critical for certain types of data processing where order matters.
-
-- **MultiThreadedExecutor**: Designed for more complex scenarios, this executor allows multiple nodes to be spun concurrently across different threads. This is particularly useful in systems where nodes operate independently or when the application demands real-time processing. The MultiThreadedExecutor enhances throughput and responsiveness by leveraging parallel processing capabilities.
-
-The choice between SingleThreadedExecutor and MultiThreadedExecutor depends on the specific requirements of your application, including the need for real-time data processing, the complexity of the tasks performed by each node, and the overall system architecture.
-
-The `MultiThreadedExecutor` is especially suitable for applications that demand high performance and scalability, where tasks across different nodes do not need to be executed in a strict sequence. It exemplifies how Fast DDS can be employed to build robust and high-throughput distributed applications, making it an invaluable tool for developers working on advanced systems within the ROS 2 ecosystem and beyond.
 
 ## License
 
