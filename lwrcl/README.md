@@ -115,27 +115,6 @@ User can define QoS depth for publishers and subscribers. The QoS depth determin
 The `Logger` class provides a simple logging mechanism for printing messages to the console. It supports different log levels, including `DEBUG`, `INFO`, `WARN`, and `ERROR`, allowing users to control the verbosity of log messages.
 
 
-# Executors for Fast DDS
-
-Executors play a crucial role in the `lwrcl` for Fast DDS, allowing for concurrent message processing and event handling across multiple nodes. Inspired by the ROS 2 executor concept, these executors facilitate the management and operation of nodes, enabling efficient communication within the Fast DDS ecosystem.
-
-## SingleThreadedExecutor
-
-The `SingleThreadedExecutor` manages and spins multiple nodes sequentially within a single thread. This executor is designed for simplicity and is best suited for scenarios where tasks need to be executed in a specific order without the overhead of multi-threading.
-
-### Features
-
-- **Sequential Processing:** Executes node callbacks one at a time, ensuring that message processing does not overlap.
-- **Simplicity:** Easier to debug and maintain due to the single-threaded nature of operation.
-- **Use Case:** Ideal for simpler systems where concurrent message processing is not critical, or for tasks that must be executed in order.
-
-### Key Functions
-
-- **add_node(std::shared_ptr\<Node\> node):** Integrates a node into the executor's workflow.
-- **remove_node(std::shared_ptr\<Node\> node):** Detaches a node from the executor.
-- **spin():** Begins the sequential processing of messages for all nodes managed by the executor.
-- **cancel():** Halts the processing loop, ensuring all nodes are gracefully stopped.
-
 ## Executors for Fast DDS
 
 Executors are a key component of the Fast DDS ecosystem, enabling the concurrent processing of messages and events across multiple nodes. By managing the execution of nodes within a single or multiple threads, executors provide a flexible and efficient way to handle communication and data processing tasks.
