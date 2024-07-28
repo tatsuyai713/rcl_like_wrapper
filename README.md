@@ -4,7 +4,7 @@ This repository provides build scripts and samples for Fast DDS, designed to be 
 
 This library provides a simplified API similar to ROS 2's rclcpp for working with Fast DDS, enabling easier integration and management of nodes, publishers, subscribers, and timers within the Fast DDS ecosystem.
 
-And also, this library enable to implement ROS 2 compatible applications with Fast DDS on lightweight SBCs such as Raspberry Pi.
+And also, this library enables to implement ROS 2 compatible applications with Fast DDS on lightweight SBCs such as Raspberry Pi.
 
 ## Features
 
