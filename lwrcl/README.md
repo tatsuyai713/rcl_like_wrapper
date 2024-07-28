@@ -117,7 +117,7 @@ The `Logger` class provides a simple logging mechanism for printing messages to 
 
 # Executors for Fast DDS
 
-Executors play a crucial role in the RCL-like wrapper for Fast DDS, allowing for concurrent message processing and event handling across multiple nodes. Inspired by the ROS 2 executor concept, these executors facilitate the management and operation of nodes, enabling efficient communication within the Fast DDS ecosystem.
+Executors play a crucial role in the `lwrcl` for Fast DDS, allowing for concurrent message processing and event handling across multiple nodes. Inspired by the ROS 2 executor concept, these executors facilitate the management and operation of nodes, enabling efficient communication within the Fast DDS ecosystem.
 
 ## SingleThreadedExecutor
 
