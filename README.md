@@ -2,6 +2,10 @@
 
 This repository provides build scripts and samples for Fast DDS, designed to be compatible with ROS 2 topics. It serves as a bridge for developers looking to integrate Fast DDS with ROS 2 ecosystems, ensuring seamless communication and interoperability between systems using these technologies.
 
+This library provides a simplified API similar to ROS 2's rclcpp for working with Fast DDS, enabling easier integration and management of nodes, publishers, subscribers, and timers within the Fast DDS ecosystem.
+
+And also, this library enable to implement ROS 2 compatible applications with Fast DDS on lightweight SBCs such as Raspberry Pi.
+
 ## Features
 
 - **Fast DDS Build Scripts:** Simplify the process of installing and setting up Fast DDS on Ubuntu/Debian systems.
