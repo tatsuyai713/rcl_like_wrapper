@@ -6,18 +6,11 @@ if(NOT fastrtps_FOUND)
     find_package(fastrtps REQUIRED)
 endif()
 
-if(${CMAKE_SYSTEM_NAME} STREQUAL "QNX")
-    set(ROS_DATA_TYPES_INCLUDE_PATH /opt/qnx/fast-dds-libs/include)
-    include_directories(/opt/qnx/fast-dds-libs/include 
-    /opt/qnx/fast-dds-libs/include/optionparser
-    /opt/qnx/fast-dds-libs/include/lwrcl)
-    link_directories(/opt/qnx/fast-dds-libs/lib)
-else()
-    set(ROS_DATA_TYPES_INCLUDE_PATH /opt/fast-dds-libs/include)
-    include_directories(/opt/fast-dds-libs/include
-                        /opt/fast-dds-libs/include/optionparser)
-    link_directories(/opt/fast-dds-libs/lib)
-endif()
+set(ROS_DATA_TYPES_INCLUDE_PATH /opt/fast-dds-libs/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../lwrcl/src/lwrcl/include
+                    /opt/fast-dds-libs/include
+                    /opt/fast-dds-libs/include/optionparser)
+link_directories(/opt/fast-dds-libs/lib)
 
 add_executable(example_spin src/example_spin.cpp)
 add_executable(example_timer src/example_timer.cpp)
@@ -39,6 +32,3 @@ target_link_libraries(example_service_client PRIVATE fastrtps std_msgs sensor_ms
 install(TARGETS example_spin example_timer example_class_pub example_class_sub example_class_pubsub_executor example_service_server
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin)
-
-# Install headers
-install(DIRECTORY include/ DESTINATION include/lwrcl)

@@ -36,6 +36,20 @@ namespace lwrcl
   class Service;
   template <typename T>
   class Client;
+  class Parameter;
+
+  // Define a parameter class
+  typedef std::unordered_map<std::string, Parameter> Parameters;
+  typedef std::unordered_map<std::string, Parameters> NodeParameters;
+  // Global variable for parameters
+  extern NodeParameters node_parameters;
+  enum LogLevel
+  {
+    DEBUG,
+    INFO,
+    WARN,
+    ERROR
+  };
 
   // lwrcl functions
   bool ok(void);
@@ -44,9 +58,12 @@ namespace lwrcl
   void shutdown(void);
   void sleep_for(const lwrcl::Duration &duration);
   void spin_some(std::shared_ptr<lwrcl::Node> node);
+  // Load parameters from file
+  std::string get_params_file_path(int argc, char *argv[]);
+  void load_parameters(const std::string &file_path);
+  // void log(LogLevel level, const char *format, ...);
 
   // Base class for different parameter types
-
   class ParameterBase
   {
   public:
@@ -55,164 +72,44 @@ namespace lwrcl
     virtual std::string as_string() const = 0;
   };
 
+  // Parameter class for different types
   class Parameter : public ParameterBase
   {
   public:
     // Constructor for bool
-    Parameter(const std::string &name, bool value) : name_(name), type_(Type::BOOL)
-    {
-      string_value_ = value ? "true" : "false";
-    }
-
+    Parameter(const std::string &name, bool value);
     // Constructor for int
-    Parameter(const std::string &name, int value) : name_(name), type_(Type::INT)
-    {
-      string_value_ = int_to_string(value);
-    }
-
+    Parameter(const std::string &name, int value);
     // Constructor for double
-    Parameter(const std::string &name, double value) : name_(name), type_(Type::DOUBLE)
-    {
-      string_value_ = double_to_string(value);
-    }
-
+    Parameter(const std::string &name, double value);
     // Constructor for std::string
-    Parameter(const std::string &name, const std::string &value) : name_(name), type_(Type::STRING)
-    {
-      string_value_ = value;
-    }
-
+    Parameter(const std::string &name, const std::string &value);
     // Constructor for const char*
-    Parameter(const std::string &name, const char *value) : name_(name), type_(Type::STRING)
-    {
-      string_value_ = value;
-    }
-
+    Parameter(const std::string &name, const char *value);
     // Constructor for bool array
-    Parameter(const std::string &name, const std::vector<bool> &value)
-        : name_(name), type_(Type::BOOL_ARRAY)
-    {
-      string_value_ = vector_to_string(value);
-    }
-
+    Parameter(const std::string &name, const std::vector<bool> &value);
     // Constructor for int array
-    Parameter(const std::string &name, const std::vector<int> &value)
-        : name_(name), type_(Type::INT_ARRAY)
-    {
-      string_value_ = vector_to_string(value);
-    }
-
+    Parameter(const std::string &name, const std::vector<int> &value);
     // Constructor for double array
-    Parameter(const std::string &name, const std::vector<double> &value)
-        : name_(name), type_(Type::DOUBLE_ARRAY)
-    {
-      string_value_ = vector_to_string(value);
-    }
-
+    Parameter(const std::string &name, const std::vector<double> &value);
     // Constructor for std::string array
-    Parameter(const std::string &name, const std::vector<std::string> &value)
-        : name_(name), type_(Type::STRING_ARRAY)
-    {
-      string_value_ = vector_to_string(value);
-    }
-
+    Parameter(const std::string &name, const std::vector<std::string> &value);
     // Constructor for const char* array
-    Parameter(const std::string &name, std::vector<const char *> &value)
-        : name_(name), type_(Type::STRING_ARRAY)
-    {
-      string_value_ = vector_to_string(value);
-    }
-
+    Parameter(const std::string &name, std::vector<const char *> &value);
     // Constructor for Byte array
-    Parameter(const std::string &name, const std::vector<uint8_t> &value)
-        : name_(name), type_(Type::BYTE_ARRAY)
-    {
-      string_value_ = vector_to_string(value);
-    }
-
-    Parameter() : type_(Type::UNKNOWN) {}
-
-    // Get name
-    std::string get_name() const override { return name_; }
-
-    // Get value (specific to type)
-    bool as_bool() const
-    {
-      if (type_ != Type::BOOL)
-      {
-        throw std::runtime_error("Parameter is not a bool");
-      }
-      return string_value_ == "true";
-    }
-
-    int as_int() const
-    {
-      if (type_ != Type::INT)
-      {
-        throw std::runtime_error("Parameter is not an int");
-      }
-      int int_value;
-      std::istringstream iss(string_value_);
-      iss >> int_value;
-      return int_value;
-    }
-    double as_double() const
-    {
-      if (type_ != Type::DOUBLE)
-      {
-        throw std::runtime_error("Parameter is not a double");
-      }
-      double double_value;
-      std::istringstream iss(string_value_);
-      iss >> double_value;
-      return double_value;
-    }
-    std::string as_string() const { return string_value_; }
-
-    std::vector<bool> as_bool_array() const
-    {
-      if (type_ != Type::BOOL_ARRAY)
-      {
-        throw std::runtime_error("Parameter is not a bool array");
-      }
-      return string_to_vector<bool>(string_value_);
-    }
-
-    std::vector<int> as_integer_array() const
-    {
-      if (type_ != Type::INT_ARRAY)
-      {
-        throw std::runtime_error("Parameter is not an int array");
-      }
-      return string_to_vector<int>(string_value_);
-    }
-
-    std::vector<double> as_double_array() const
-    {
-      if (type_ != Type::DOUBLE_ARRAY)
-      {
-        throw std::runtime_error("Parameter is not a double array");
-      }
-      return string_to_vector<double>(string_value_);
-    }
-
-    std::vector<std::string> as_string_array() const
-    {
-      if (type_ != Type::STRING_ARRAY)
-      {
-        throw std::runtime_error("Parameter is not a string array");
-      }
-      return string_to_vector<std::string>(string_value_);
-    }
-
-    std::vector<uint8_t> as_byte_array() const
-    {
-      if (type_ != Type::BYTE_ARRAY)
-      {
-        throw std::runtime_error("Parameter is not a string array");
-      }
-      return string_to_vector<uint8_t>(string_value_);
-    }
+    Parameter(const std::string &name, const std::vector<uint8_t> &value);
+    Parameter();
+    ~Parameter() = default;
+    std::string get_name() const override;
+    bool as_bool() const;
+    int as_int() const;
+    double as_double() const;
+    std::string as_string() const;
+    std::vector<bool> as_bool_array() const;
+    std::vector<int> as_integer_array() const;
+    std::vector<double> as_double_array() const;
+    std::vector<std::string> as_string_array() const;
+    std::vector<uint8_t> as_byte_array() const;
 
   private:
     enum class Type
@@ -234,20 +131,9 @@ namespace lwrcl
     Type type_;
 
     // Convert int to string
-    static std::string int_to_string(int value)
-    {
-      std::ostringstream oss;
-      oss << value;
-      return oss.str();
-    }
-
+    std::string int_to_string(int value);
     // Convert double to string
-    static std::string double_to_string(double value)
-    {
-      std::ostringstream oss;
-      oss << value;
-      return oss.str();
-    }
+    std::string double_to_string(double value);
 
     // Convert vector to string
     template <typename T>
@@ -283,6 +169,7 @@ namespace lwrcl
     }
   };
 
+  // Quality of Service class
   class QoS
   {
   public:
@@ -297,20 +184,25 @@ namespace lwrcl
     uint16_t depth_;
   };
 
-  typedef std::unordered_map<std::string, Parameter> Parameters;
-  typedef std::unordered_map<std::string, Parameters> NodeParameters;
-
-  extern NodeParameters node_parameters;
-
   class Node : public std::enable_shared_from_this<Node>
   {
   public:
     using SharedPtr = std::shared_ptr<Node>;
 
+    // Constructor
+    Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
+    Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant,
+        const std::string &name);
+    // Destructor
+    virtual ~Node();
+
+    // Getters
     std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> get_participant() const;
     std::string get_name() const;
     Logger get_logger() const;
+    virtual Clock::SharedPtr get_clock() const;
 
+    // Create publisher, subscription, service, client, timer
     template <typename T>
     std::shared_ptr<Publisher<T>> create_publisher(const std::string &topic, const uint16_t &depth)
     {
@@ -396,6 +288,7 @@ namespace lwrcl
       return timer;
     }
 
+    // Create node
     static std::shared_ptr<Node> make_shared(int domain_id);
     static std::shared_ptr<Node> make_shared(int domain_id, const std::string &name);
     static std::shared_ptr<Node> make_shared(const std::string &name);
@@ -405,365 +298,46 @@ namespace lwrcl
         std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant,
         const std::string &name);
 
+    // Friend functions
     friend void lwrcl::spin(std::shared_ptr<Node> node);
     friend void lwrcl::spin_some(std::shared_ptr<Node> node);
 
+    // Node functions
     virtual void shutdown();
-    virtual Clock::SharedPtr get_clock();
 
-    Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
-    Node(
-        std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant,
-        const std::string &name);
-    virtual ~Node();
+    // Parameter functions
+    void set_parameters(const std::vector<std::shared_ptr<ParameterBase>> &parameters);
+    void set_parameters(const std::vector<Parameter> &parameters);
+    void declare_parameter(const std::string &name, const bool &default_value);
+    void declare_parameter(const std::string &name, const int &default_value);
+    void declare_parameter(const std::string &name, const double &default_value);
+    void declare_parameter(const std::string &name, const std::string &default_value);
+    void declare_parameter(const std::string &name, const char *default_value);
+    void declare_parameter(const std::string &name, const std::vector<bool> default_value);
+    void declare_parameter(const std::string &name, const std::vector<int> default_value);
+    void declare_parameter(const std::string &name, const std::vector<double> default_value);
+    void declare_parameter(const std::string &name, const std::vector<std::string> default_value);
+    void declare_parameter(const std::string &name, const std::vector<uint8_t> default_value);
+    Parameter get_parameter(const std::string &name) const;
+    void get_parameter(const std::string &name, bool &bool_data) const;
+    void get_parameter(const std::string &name, int &int_data) const;
+    void get_parameter(const std::string &name, double &double_data) const;
+    void get_parameter(const std::string &name, std::string &string_data) const;
 
-    void set_parameters(const std::vector<std::shared_ptr<ParameterBase>> &parameters)
-    {
-      for (const auto &param : parameters)
-      {
-        std::string node_name = this->get_name();
-        std::string param_name = param->get_name();
-
-        // Check if the node exists in node_parameters
-        auto node_it = node_parameters.find(node_name);
-        if (node_it != node_parameters.end())
-        {
-          Parameters &params = node_it->second;
-
-          // Check if the parameter exists in the node_parameters for this node
-          if (params.find(param_name) != params.end())
-          {
-            // Update the existing parameter
-            params[param_name] = *std::dynamic_pointer_cast<Parameter>(param);
-            parameters_[param_name] = *std::dynamic_pointer_cast<Parameter>(param);
-
-            std::cout << "Parameter updated: " << param_name << std::endl;
-          }
-          else
-          {
-            std::cerr << "Parameter not found: " << param_name << std::endl;
-          }
-        }
-        else
-        {
-          std::cerr << "Node not found: " << node_name << std::endl;
-        }
-      }
-    }
-
-    void set_parameters(const std::vector<Parameter> &parameters)
-    {
-      std::vector<std::shared_ptr<ParameterBase>> base_params;
-      for (const auto &param : parameters)
-      {
-        base_params.push_back(std::make_shared<Parameter>(param));
-      }
-      set_parameters(base_params);
-    }
-
-    void declare_parameter(const std::string &name, const bool &default_value)
-    {
-      std::string node_name = this->get_name();
-
-      auto node_it = node_parameters.find(node_name);
-      if (node_it != node_parameters.end())
-      {
-        const Parameters &params = node_it->second;
-        auto param_it = params.find(name);
-        if (param_it != params.end())
-        {
-          Parameter param_value = param_it->second;
-          parameters_[name] = param_value;
-          node_parameters[node_name][name] = param_value;
-          return;
-        }
-      }
-
-      parameters_[name] = Parameter(name, default_value);
-      node_parameters[node_name][name] = Parameter(name, default_value);
-    }
-
-    void declare_parameter(const std::string &name, const int &default_value)
-    {
-      std::string node_name = this->get_name();
-
-      auto node_it = node_parameters.find(node_name);
-      if (node_it != node_parameters.end())
-      {
-        const Parameters &params = node_it->second;
-        auto param_it = params.find(name);
-        if (param_it != params.end())
-        {
-          Parameter param_value = param_it->second;
-          parameters_[name] = param_value;
-          node_parameters[node_name][name] = param_value;
-          return;
-        }
-      }
-
-      parameters_[name] = Parameter(name, default_value);
-      node_parameters[node_name][name] = Parameter(name, default_value);
-    }
-
-    void declare_parameter(const std::string &name, const double &default_value)
-    {
-      std::string node_name = this->get_name();
-
-      auto node_it = node_parameters.find(node_name);
-      if (node_it != node_parameters.end())
-      {
-        const Parameters &params = node_it->second;
-        auto param_it = params.find(name);
-        if (param_it != params.end())
-        {
-          Parameter param_value = param_it->second;
-          parameters_[name] = param_value;
-          node_parameters[node_name][name] = param_value;
-          return;
-        }
-      }
-
-      parameters_[name] = Parameter(name, default_value);
-      node_parameters[node_name][name] = Parameter(name, default_value);
-    }
-
-    void declare_parameter(const std::string &name, const std::string &default_value)
-    {
-      std::string node_name = this->get_name();
-
-      auto node_it = node_parameters.find(node_name);
-      if (node_it != node_parameters.end())
-      {
-        const Parameters &params = node_it->second;
-        auto param_it = params.find(name);
-        if (param_it != params.end())
-        {
-          Parameter param_value = param_it->second;
-          parameters_[name] = param_value;
-          node_parameters[node_name][name] = param_value;
-          return;
-        }
-      }
-
-      parameters_[name] = Parameter(name, default_value);
-      node_parameters[node_name][name] = Parameter(name, default_value);
-    }
-
-    void declare_parameter(const std::string &name, const char *default_value)
-    {
-      std::string node_name = this->get_name();
-
-      auto node_it = node_parameters.find(node_name);
-      if (node_it != node_parameters.end())
-      {
-        const Parameters &params = node_it->second;
-        auto param_it = params.find(name);
-        if (param_it != params.end())
-        {
-          Parameter param_value = param_it->second;
-          parameters_[name] = param_value;
-          node_parameters[node_name][name] = param_value;
-          return;
-        }
-      }
-
-      parameters_[name] = Parameter(name, default_value);
-      node_parameters[node_name][name] = Parameter(name, default_value);
-    }
-
-    void declare_parameter(const std::string &name, const std::vector<bool> default_value)
-    {
-      std::string node_name = this->get_name();
-
-      auto node_it = node_parameters.find(node_name);
-      if (node_it != node_parameters.end())
-      {
-        const Parameters &params = node_it->second;
-        auto param_it = params.find(name);
-        if (param_it != params.end())
-        {
-          Parameter param_value = param_it->second;
-          parameters_[name] = param_value;
-          node_parameters[node_name][name] = param_value;
-          return;
-        }
-      }
-
-      parameters_[name] = Parameter(name, default_value);
-      node_parameters[node_name][name] = Parameter(name, default_value);
-    }
-
-    void declare_parameter(const std::string &name, const std::vector<int> default_value)
-    {
-      std::string node_name = this->get_name();
-
-      auto node_it = node_parameters.find(node_name);
-      if (node_it != node_parameters.end())
-      {
-        const Parameters &params = node_it->second;
-        auto param_it = params.find(name);
-        if (param_it != params.end())
-        {
-          Parameter param_value = param_it->second;
-          parameters_[name] = param_value;
-          node_parameters[node_name][name] = param_value;
-          return;
-        }
-      }
-
-      parameters_[name] = Parameter(name, default_value);
-      node_parameters[node_name][name] = Parameter(name, default_value);
-    }
-
-    void declare_parameter(const std::string &name, const std::vector<double> default_value)
-    {
-      std::string node_name = this->get_name();
-
-      auto node_it = node_parameters.find(node_name);
-      if (node_it != node_parameters.end())
-      {
-        const Parameters &params = node_it->second;
-        auto param_it = params.find(name);
-        if (param_it != params.end())
-        {
-          Parameter param_value = param_it->second;
-          parameters_[name] = param_value;
-          node_parameters[node_name][name] = param_value;
-          return;
-        }
-      }
-
-      parameters_[name] = Parameter(name, default_value);
-      node_parameters[node_name][name] = Parameter(name, default_value);
-    }
-
-    void declare_parameter(const std::string &name, const std::vector<std::string> default_value)
-    {
-      std::string node_name = this->get_name();
-
-      auto node_it = node_parameters.find(node_name);
-      if (node_it != node_parameters.end())
-      {
-        const Parameters &params = node_it->second;
-        auto param_it = params.find(name);
-        if (param_it != params.end())
-        {
-          Parameter param_value = param_it->second;
-          parameters_[name] = param_value;
-          node_parameters[node_name][name] = param_value;
-          return;
-        }
-      }
-
-      parameters_[name] = Parameter(name, default_value);
-      node_parameters[node_name][name] = Parameter(name, default_value);
-    }
-
-    void declare_parameter(const std::string &name, const std::vector<uint8_t> default_value)
-    {
-      std::string node_name = this->get_name();
-
-      auto node_it = node_parameters.find(node_name);
-      if (node_it != node_parameters.end())
-      {
-        const Parameters &params = node_it->second;
-        auto param_it = params.find(name);
-        if (param_it != params.end())
-        {
-          Parameter param_value = param_it->second;
-          parameters_[name] = param_value;
-          node_parameters[node_name][name] = param_value;
-          return;
-        }
-      }
-
-      parameters_[name] = Parameter(name, default_value);
-      node_parameters[node_name][name] = Parameter(name, default_value);
-    }
-
-    Parameter get_parameter(const std::string &name) const
-    {
-      auto it = parameters_.find(name);
-      if (it != parameters_.end())
-      {
-        return it->second;
-      }
-      else
-      {
-        throw std::runtime_error("Parameter not found");
-      }
-    }
-
-    void get_parameter(const std::string &name, bool &bool_data) const
-    {
-      auto it = parameters_.find(name);
-      if (it != parameters_.end())
-      {
-        Parameter param = it->second;
-        bool_data = param.as_bool();
-      }
-      else
-      {
-        throw std::runtime_error("Parameter not found");
-      }
-    }
-
-    void get_parameter(const std::string &name, int &int_data) const
-    {
-      auto it = parameters_.find(name);
-      if (it != parameters_.end())
-      {
-        Parameter param = it->second;
-        int_data = param.as_int();
-      }
-      else
-      {
-        throw std::runtime_error("Parameter not found");
-      }
-    }
-
-    void get_parameter(const std::string &name, double &double_data) const
-    {
-      auto it = parameters_.find(name);
-      if (it != parameters_.end())
-      {
-        Parameter param = it->second;
-        double_data = param.as_double();
-      }
-      else
-      {
-        throw std::runtime_error("Parameter not found");
-      }
-    }
-
-    void get_parameter(const std::string &name, std::string &string_data) const
-    {
-      auto it = parameters_.find(name);
-      if (it != parameters_.end())
-      {
-        Parameter param = it->second;
-        string_data = param.as_string();
-      }
-      else
-      {
-        throw std::runtime_error("Parameter not found");
-      }
-    }
-
-    int closed_;
     void stop_spin();
-    bool stop_flag_;
 
   private:
     virtual void spin();
     virtual void spin_some();
 
   protected:
+    // Protected constructor
     Node(int domain_id);
     Node(int domain_id, const std::string &name);
     Node(const std::string &name);
 
   private:
+    // Deleter for DomainParticipant
     struct DomainParticipantDeleter
     {
       void operator()(eprosima::fastdds::dds::DomainParticipant *participant) const
@@ -776,9 +350,7 @@ namespace lwrcl
       }
     };
 
-    std::string get_params_file_path(int argc, char *argv[]);
-    void load_parameters(const std::string &file_path);
-
+    // Member variables
     std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant_;
     Channel<ChannelCallback *>::SharedPtr channel_;
     Clock::SharedPtr clock_;
@@ -789,8 +361,14 @@ namespace lwrcl
     std::forward_list<std::shared_ptr<IService>> service_list_;
     std::forward_list<std::shared_ptr<IClient>> client_list_;
     Parameters parameters_;
+  
+  public:
+    // Public member variables
+    bool closed_;
+    bool stop_flag_;
   };
 
+  // Executor classes
   namespace executors
   {
     // Executor that manages and executes nodes in a single thread.
@@ -805,7 +383,6 @@ namespace lwrcl
       void cancel();
       void spin();
       void spin_some();
-      // void spin_once(std::chrono::nanoseconds timeout);
 
     private:
       std::vector<Node::SharedPtr> nodes_; // List of nodes managed by the executor.
@@ -824,7 +401,6 @@ namespace lwrcl
       void cancel();
       void spin();
       void spin_some();
-      // void spin_once(std::chrono::nanoseconds timeout);
       int get_number_of_threads() const;
 
     private:
@@ -834,6 +410,7 @@ namespace lwrcl
     };
   } // namespace executors
 
+  // Rate class
   class Rate
   {
   private:
@@ -856,17 +433,7 @@ namespace lwrcl
     void sleep();
   };
 
-  enum LogLevel
-  {
-    DEBUG,
-    INFO,
-    WARN,
-    ERROR
-  };
-
-  void log(LogLevel level, const char *format, ...);
-
-  // Logger クラス
+  // Logger Class
   class Logger
   {
   public:

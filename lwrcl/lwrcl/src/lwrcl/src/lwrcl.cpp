@@ -31,6 +31,178 @@ namespace lwrcl
     }
   }
 
+  // Constructor for bool
+  Parameter::Parameter(const std::string &name, bool value) : name_(name), type_(Type::BOOL)
+  {
+    string_value_ = value ? "true" : "false";
+  }
+
+  // Constructor for int
+  Parameter::Parameter(const std::string &name, int value) : name_(name), type_(Type::INT)
+  {
+    string_value_ = int_to_string(value);
+  }
+
+  // Constructor for double
+  Parameter::Parameter(const std::string &name, double value) : name_(name), type_(Type::DOUBLE)
+  {
+    string_value_ = double_to_string(value);
+  }
+
+  // Constructor for std::string
+  Parameter::Parameter(const std::string &name, const std::string &value) : name_(name), type_(Type::STRING)
+  {
+    string_value_ = value;
+  }
+
+  // Constructor for const char*
+  Parameter::Parameter(const std::string &name, const char *value) : name_(name), type_(Type::STRING)
+  {
+    string_value_ = value;
+  }
+
+  // Constructor for bool array
+  Parameter::Parameter(const std::string &name, const std::vector<bool> &value)
+      : name_(name), type_(Type::BOOL_ARRAY)
+  {
+    string_value_ = vector_to_string(value);
+  }
+
+  // Constructor for int array
+  Parameter::Parameter(const std::string &name, const std::vector<int> &value)
+      : name_(name), type_(Type::INT_ARRAY)
+  {
+    string_value_ = vector_to_string(value);
+  }
+
+  // Constructor for double array
+  Parameter::Parameter(const std::string &name, const std::vector<double> &value)
+      : name_(name), type_(Type::DOUBLE_ARRAY)
+  {
+    string_value_ = vector_to_string(value);
+  }
+
+  // Constructor for std::string array
+  Parameter::Parameter(const std::string &name, const std::vector<std::string> &value)
+      : name_(name), type_(Type::STRING_ARRAY)
+  {
+    string_value_ = vector_to_string(value);
+  }
+
+  // Constructor for const char* array
+  Parameter::Parameter(const std::string &name, std::vector<const char *> &value)
+      : name_(name), type_(Type::STRING_ARRAY)
+  {
+    string_value_ = vector_to_string(value);
+  }
+
+  // Constructor for Byte array
+  Parameter::Parameter(const std::string &name, const std::vector<uint8_t> &value)
+      : name_(name), type_(Type::BYTE_ARRAY)
+  {
+    string_value_ = vector_to_string(value);
+  }
+
+  Parameter::Parameter() : type_(Type::UNKNOWN) {}
+
+  // Get name
+  std::string Parameter::get_name() const { return name_; }
+
+  // Get value (specific to type)
+  bool Parameter::as_bool() const
+  {
+    if (type_ != Type::BOOL)
+    {
+      throw std::runtime_error("Parameter is not a bool");
+    }
+    return string_value_ == "true";
+  }
+
+  int Parameter::as_int() const
+  {
+    if (type_ != Type::INT)
+    {
+      throw std::runtime_error("Parameter is not an int");
+    }
+    int int_value;
+    std::istringstream iss(string_value_);
+    iss >> int_value;
+    return int_value;
+  }
+  double Parameter::as_double() const
+  {
+    if (type_ != Type::DOUBLE)
+    {
+      throw std::runtime_error("Parameter is not a double");
+    }
+    double double_value;
+    std::istringstream iss(string_value_);
+    iss >> double_value;
+    return double_value;
+  }
+  std::string Parameter::as_string() const { return string_value_; }
+
+  std::vector<bool> Parameter::as_bool_array() const
+  {
+    if (type_ != Type::BOOL_ARRAY)
+    {
+      throw std::runtime_error("Parameter is not a bool array");
+    }
+    return string_to_vector<bool>(string_value_);
+  }
+
+  std::vector<int> Parameter::as_integer_array() const
+  {
+    if (type_ != Type::INT_ARRAY)
+    {
+      throw std::runtime_error("Parameter is not an int array");
+    }
+    return string_to_vector<int>(string_value_);
+  }
+
+  std::vector<double> Parameter::as_double_array() const
+  {
+    if (type_ != Type::DOUBLE_ARRAY)
+    {
+      throw std::runtime_error("Parameter is not a double array");
+    }
+    return string_to_vector<double>(string_value_);
+  }
+
+  std::vector<std::string> Parameter::as_string_array() const
+  {
+    if (type_ != Type::STRING_ARRAY)
+    {
+      throw std::runtime_error("Parameter is not a string array");
+    }
+    return string_to_vector<std::string>(string_value_);
+  }
+
+  std::vector<uint8_t> Parameter::as_byte_array() const
+  {
+    if (type_ != Type::BYTE_ARRAY)
+    {
+      throw std::runtime_error("Parameter is not a string array");
+    }
+    return string_to_vector<uint8_t>(string_value_);
+  }
+
+  // Convert int to string
+  std::string Parameter::int_to_string(int value)
+  {
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+  }
+
+  // Convert double to string
+  std::string Parameter::double_to_string(double value)
+  {
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+  }
+
   void log(LogLevel level, const char *format, ...)
   {
     va_list args;
@@ -151,7 +323,7 @@ namespace lwrcl
       {
         if (node != nullptr)
         {
-          if (node->closed_ == 0)
+          if (node->closed_ == false)
           {
             node->shutdown();
           }
@@ -170,7 +342,7 @@ namespace lwrcl
         {
           if (node != nullptr)
           {
-            if (node->closed_ == 0)
+            if (node->closed_ == false)
             {
               lwrcl::spin_some(node);
             }
@@ -195,7 +367,7 @@ namespace lwrcl
       {
         if (node != nullptr)
         {
-          if (node->closed_ == 0)
+          if (node->closed_ == false)
           {
             lwrcl::spin_some(node);
           }
@@ -239,7 +411,7 @@ namespace lwrcl
       {
         if (node != nullptr)
         {
-          if (node->closed_ == 0)
+          if (node->closed_ == false)
           {
             node->shutdown();
           }
@@ -261,7 +433,7 @@ namespace lwrcl
                               {
             if(node != nullptr)
             {
-              if (node->closed_ == 0)
+              if (node->closed_ == false)
               {
                   lwrcl::spin(node);
               }
@@ -289,7 +461,7 @@ namespace lwrcl
       {
         if (node != nullptr)
         {
-          if (node->closed_ == 0)
+          if (node->closed_ == false)
           {
             lwrcl::spin_some(node);
           }
@@ -432,7 +604,7 @@ namespace lwrcl
     {
       throw std::runtime_error("Failed to create domain participant");
     }
-    closed_ = 0;
+    closed_ = false;
   }
 
   Node::Node(int domain_id, const std::string &name)
@@ -469,7 +641,7 @@ namespace lwrcl
     {
       throw std::runtime_error("Failed to create domain participant");
     }
-    closed_ = 0;
+    closed_ = false;
   }
 
   Node::Node(const std::string &name)
@@ -507,7 +679,7 @@ namespace lwrcl
     {
       throw std::runtime_error("Failed to create domain participant");
     }
-    closed_ = 0;
+    closed_ = false;
   }
 
   Node::Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
@@ -520,7 +692,7 @@ namespace lwrcl
     {
       throw std::runtime_error("Failed to create domain participant");
     }
-    closed_ = 0;
+    closed_ = false;
   }
 
   Node::Node(
@@ -534,12 +706,12 @@ namespace lwrcl
     {
       throw std::runtime_error("Failed to create domain participant");
     }
-    closed_ = 0;
+    closed_ = false;
   }
 
   Node::~Node()
   {
-    if (closed_ == 0)
+    if (closed_ == false)
     {
       this->shutdown();
     }
@@ -594,7 +766,7 @@ namespace lwrcl
   void Node::spin()
   {
     stop_flag_ = false;
-    while (closed_ == 0 && global_stop_flag.load() == false && stop_flag_ == false)
+    while (closed_ == false && global_stop_flag.load() == false && stop_flag_ == false)
     {
       ChannelCallback *callback;
       while (channel_->consume(callback) && global_stop_flag.load() == false && stop_flag_ == false)
@@ -657,10 +829,343 @@ namespace lwrcl
     {
       std::static_pointer_cast<IClient>(client)->stop();
     }
-    closed_ = 1;
+    closed_ = true;
   }
 
-  Clock::SharedPtr Node::get_clock()
+  void Node::set_parameters(const std::vector<std::shared_ptr<ParameterBase>> &parameters)
+  {
+    for (const auto &param : parameters)
+    {
+      std::string node_name = this->get_name();
+      std::string param_name = param->get_name();
+
+      // Check if the node exists in node_parameters
+      auto node_it = node_parameters.find(node_name);
+      if (node_it != node_parameters.end())
+      {
+        Parameters &params = node_it->second;
+
+        // Check if the parameter exists in the node_parameters for this node
+        if (params.find(param_name) != params.end())
+        {
+          // Update the existing parameter
+          params[param_name] = *std::dynamic_pointer_cast<Parameter>(param);
+          parameters_[param_name] = *std::dynamic_pointer_cast<Parameter>(param);
+
+          std::cout << "Parameter updated: " << param_name << std::endl;
+        }
+        else
+        {
+          std::cerr << "Parameter not found: " << param_name << std::endl;
+        }
+      }
+      else
+      {
+        std::cerr << "Node not found: " << node_name << std::endl;
+      }
+    }
+  }
+
+  void Node::set_parameters(const std::vector<Parameter> &parameters)
+  {
+    std::vector<std::shared_ptr<ParameterBase>> base_params;
+    for (const auto &param : parameters)
+    {
+      base_params.push_back(std::make_shared<Parameter>(param));
+    }
+    set_parameters(base_params);
+  }
+
+  void Node::declare_parameter(const std::string &name, const bool &default_value)
+  {
+    std::string node_name = this->get_name();
+
+    auto node_it = node_parameters.find(node_name);
+    if (node_it != node_parameters.end())
+    {
+      const Parameters &params = node_it->second;
+      auto param_it = params.find(name);
+      if (param_it != params.end())
+      {
+        Parameter param_value = param_it->second;
+        parameters_[name] = param_value;
+        node_parameters[node_name][name] = param_value;
+        return;
+      }
+    }
+
+    parameters_[name] = Parameter(name, default_value);
+    node_parameters[node_name][name] = Parameter(name, default_value);
+  }
+
+  void Node::declare_parameter(const std::string &name, const int &default_value)
+  {
+    std::string node_name = this->get_name();
+
+    auto node_it = node_parameters.find(node_name);
+    if (node_it != node_parameters.end())
+    {
+      const Parameters &params = node_it->second;
+      auto param_it = params.find(name);
+      if (param_it != params.end())
+      {
+        Parameter param_value = param_it->second;
+        parameters_[name] = param_value;
+        node_parameters[node_name][name] = param_value;
+        return;
+      }
+    }
+
+    parameters_[name] = Parameter(name, default_value);
+    node_parameters[node_name][name] = Parameter(name, default_value);
+  }
+
+  void Node::declare_parameter(const std::string &name, const double &default_value)
+  {
+    std::string node_name = this->get_name();
+
+    auto node_it = node_parameters.find(node_name);
+    if (node_it != node_parameters.end())
+    {
+      const Parameters &params = node_it->second;
+      auto param_it = params.find(name);
+      if (param_it != params.end())
+      {
+        Parameter param_value = param_it->second;
+        parameters_[name] = param_value;
+        node_parameters[node_name][name] = param_value;
+        return;
+      }
+    }
+
+    parameters_[name] = Parameter(name, default_value);
+    node_parameters[node_name][name] = Parameter(name, default_value);
+  }
+
+  void Node::declare_parameter(const std::string &name, const std::string &default_value)
+  {
+    std::string node_name = this->get_name();
+
+    auto node_it = node_parameters.find(node_name);
+    if (node_it != node_parameters.end())
+    {
+      const Parameters &params = node_it->second;
+      auto param_it = params.find(name);
+      if (param_it != params.end())
+      {
+        Parameter param_value = param_it->second;
+        parameters_[name] = param_value;
+        node_parameters[node_name][name] = param_value;
+        return;
+      }
+    }
+
+    parameters_[name] = Parameter(name, default_value);
+    node_parameters[node_name][name] = Parameter(name, default_value);
+  }
+
+  void Node::declare_parameter(const std::string &name, const char *default_value)
+  {
+    std::string node_name = this->get_name();
+
+    auto node_it = node_parameters.find(node_name);
+    if (node_it != node_parameters.end())
+    {
+      const Parameters &params = node_it->second;
+      auto param_it = params.find(name);
+      if (param_it != params.end())
+      {
+        Parameter param_value = param_it->second;
+        parameters_[name] = param_value;
+        node_parameters[node_name][name] = param_value;
+        return;
+      }
+    }
+
+    parameters_[name] = Parameter(name, default_value);
+    node_parameters[node_name][name] = Parameter(name, default_value);
+  }
+
+  void Node::declare_parameter(const std::string &name, const std::vector<bool> default_value)
+  {
+    std::string node_name = this->get_name();
+
+    auto node_it = node_parameters.find(node_name);
+    if (node_it != node_parameters.end())
+    {
+      const Parameters &params = node_it->second;
+      auto param_it = params.find(name);
+      if (param_it != params.end())
+      {
+        Parameter param_value = param_it->second;
+        parameters_[name] = param_value;
+        node_parameters[node_name][name] = param_value;
+        return;
+      }
+    }
+
+    parameters_[name] = Parameter(name, default_value);
+    node_parameters[node_name][name] = Parameter(name, default_value);
+  }
+
+  void Node::declare_parameter(const std::string &name, const std::vector<int> default_value)
+  {
+    std::string node_name = this->get_name();
+
+    auto node_it = node_parameters.find(node_name);
+    if (node_it != node_parameters.end())
+    {
+      const Parameters &params = node_it->second;
+      auto param_it = params.find(name);
+      if (param_it != params.end())
+      {
+        Parameter param_value = param_it->second;
+        parameters_[name] = param_value;
+        node_parameters[node_name][name] = param_value;
+        return;
+      }
+    }
+
+    parameters_[name] = Parameter(name, default_value);
+    node_parameters[node_name][name] = Parameter(name, default_value);
+  }
+
+  void Node::declare_parameter(const std::string &name, const std::vector<double> default_value)
+  {
+    std::string node_name = this->get_name();
+
+    auto node_it = node_parameters.find(node_name);
+    if (node_it != node_parameters.end())
+    {
+      const Parameters &params = node_it->second;
+      auto param_it = params.find(name);
+      if (param_it != params.end())
+      {
+        Parameter param_value = param_it->second;
+        parameters_[name] = param_value;
+        node_parameters[node_name][name] = param_value;
+        return;
+      }
+    }
+
+    parameters_[name] = Parameter(name, default_value);
+    node_parameters[node_name][name] = Parameter(name, default_value);
+  }
+
+  void Node::declare_parameter(const std::string &name, const std::vector<std::string> default_value)
+  {
+    std::string node_name = this->get_name();
+
+    auto node_it = node_parameters.find(node_name);
+    if (node_it != node_parameters.end())
+    {
+      const Parameters &params = node_it->second;
+      auto param_it = params.find(name);
+      if (param_it != params.end())
+      {
+        Parameter param_value = param_it->second;
+        parameters_[name] = param_value;
+        node_parameters[node_name][name] = param_value;
+        return;
+      }
+    }
+
+    parameters_[name] = Parameter(name, default_value);
+    node_parameters[node_name][name] = Parameter(name, default_value);
+  }
+
+  void Node::declare_parameter(const std::string &name, const std::vector<uint8_t> default_value)
+  {
+    std::string node_name = this->get_name();
+
+    auto node_it = node_parameters.find(node_name);
+    if (node_it != node_parameters.end())
+    {
+      const Parameters &params = node_it->second;
+      auto param_it = params.find(name);
+      if (param_it != params.end())
+      {
+        Parameter param_value = param_it->second;
+        parameters_[name] = param_value;
+        node_parameters[node_name][name] = param_value;
+        return;
+      }
+    }
+
+    parameters_[name] = Parameter(name, default_value);
+    node_parameters[node_name][name] = Parameter(name, default_value);
+  }
+
+  Parameter Node::get_parameter(const std::string &name) const
+  {
+    auto it = parameters_.find(name);
+    if (it != parameters_.end())
+    {
+      return it->second;
+    }
+    else
+    {
+      throw std::runtime_error("Parameter not found");
+    }
+  }
+
+  void Node::get_parameter(const std::string &name, bool &bool_data) const
+  {
+    auto it = parameters_.find(name);
+    if (it != parameters_.end())
+    {
+      Parameter param = it->second;
+      bool_data = param.as_bool();
+    }
+    else
+    {
+      throw std::runtime_error("Parameter not found");
+    }
+  }
+
+  void Node::get_parameter(const std::string &name, int &int_data) const
+  {
+    auto it = parameters_.find(name);
+    if (it != parameters_.end())
+    {
+      Parameter param = it->second;
+      int_data = param.as_int();
+    }
+    else
+    {
+      throw std::runtime_error("Parameter not found");
+    }
+  }
+
+  void Node::get_parameter(const std::string &name, double &double_data) const
+  {
+    auto it = parameters_.find(name);
+    if (it != parameters_.end())
+    {
+      Parameter param = it->second;
+      double_data = param.as_double();
+    }
+    else
+    {
+      throw std::runtime_error("Parameter not found");
+    }
+  }
+
+  void Node::get_parameter(const std::string &name, std::string &string_data) const
+  {
+    auto it = parameters_.find(name);
+    if (it != parameters_.end())
+    {
+      Parameter param = it->second;
+      string_data = param.as_string();
+    }
+    else
+    {
+      throw std::runtime_error("Parameter not found");
+    }
+  }
+
+  Clock::SharedPtr Node::get_clock() const
   {
     return clock_;
   }
@@ -692,7 +1197,7 @@ namespace lwrcl
   {
     if (node != nullptr)
     {
-      if (node->closed_ == 0)
+      if (node->closed_ == false)
       {
         node->spin();
       }
@@ -707,7 +1212,7 @@ namespace lwrcl
   {
     if (node != nullptr)
     {
-      if (node->closed_ == 0)
+      if (node->closed_ == false)
       {
         node->spin_some();
       }
