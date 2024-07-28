@@ -1,4 +1,4 @@
-# lwrcl (Lightweight RCL Like Middleware) Native Fast DDS / ROS 2 Compatible Libraries
+# lwrcl (Lightweight RCLCPP Compatible Library) 
 
 This repository provides build scripts and samples for Fast DDS, designed to be compatible with ROS 2 topics. It serves as a bridge for developers looking to integrate Fast DDS with ROS 2 ecosystems, ensuring seamless communication and interoperability between systems using these technologies.
 
@@ -23,7 +23,7 @@ source /opt/ros/humble/setup.bash
 
 Clone this repository and enter the directory:
 
-```
+```bash
 git clone --recursive https://github.com/tatsuyai713/lwrcl.git
 cd lwrcl
 ```
@@ -33,31 +33,43 @@ cd lwrcl
 
 Install Fast DDS and necessary DDS packages on Ubuntu/Debian:
 
-```
+```bash
 cd scripts
 ./install_fast_dds_ubuntu_debian.sh
 # Follow the script instructions...
 source ~/.bashrc
 ```
 
-### Build and Install RCL Like Wrapper
+### Build and Install ROS Data Types
+
+```bash
+cd ../lwrcl
+./build_data_types.sh install
+```
+
+### Build and Install LWRCL
 
 Build and install the lwrcl for enhanced ROS 2 compatibility:
 
+```bash
+./build_lwrcl.sh install
 ```
-cd ../lwrcl
+
+### Build and Install Libraries for ROS Compatibility
+
+```bash
 ./build_libraries.sh install
 ```
 
-### Build RCL Like Wrapper Sample Applications
+### Build LWRCL Sample Applications
 
 Compile the lwrcl sample applications:
 
-```
-./build_apps.sh
+```bash
+./build_apps.sh install
 ```
 
-The compiled applications can be found in the apps/build folder.
+The compiled applications can be found in the apps/install folder.
 
 ## Included Open Source Projects
 
