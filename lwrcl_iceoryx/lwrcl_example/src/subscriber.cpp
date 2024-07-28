@@ -8,7 +8,7 @@ int main() {
     constexpr char APP_NAME[] = "iox-subscriber";
     iox::runtime::PoshRuntime::initRuntime(APP_NAME);
 
-    iox::popo::Subscriber<folder1::folder2::MyData::MyData> subscriber({"Example", "MyData", "Instance"});
+    iox::popo::Subscriber<folder1::folder2::MyData> subscriber({"Example", "MyData", "Instance"});
 
     while (true) {
         subscriber.take()

@@ -10,9 +10,9 @@ int main() {
     constexpr char APP_NAME[] = "iox-publisher";
     iox::runtime::PoshRuntime::initRuntime(APP_NAME);
 
-    iox::popo::Publisher<folder1::folder2::MyData::MyData> publisher({"Example", "MyData", "Instance"});
+    iox::popo::Publisher<folder1::folder2::MyData> publisher({"Example", "MyData", "Instance"});
 
-    folder1::folder2::MyData::MyData data;
+    folder1::folder2::MyData data;
     data.id = 42;
     data.message = "Hello, Iceoryx!";
 

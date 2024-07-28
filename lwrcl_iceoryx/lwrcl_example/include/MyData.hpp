@@ -8,7 +8,6 @@
 
 namespace folder1 {
 namespace folder2 {
-namespace MyData {
 
 struct MyData {
     int32_t id;
@@ -21,7 +20,6 @@ struct MyData {
     static MyData deserialize(const std::vector<uint8_t>& data);
 };
 
-} // namespace MyData
 } // namespace folder2
 } // namespace folder1
 

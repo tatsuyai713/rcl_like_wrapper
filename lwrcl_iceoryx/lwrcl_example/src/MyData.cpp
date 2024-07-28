@@ -3,7 +3,6 @@
 
 namespace folder1 {
 namespace folder2 {
-namespace MyData {
 
 std::vector<uint8_t> MyData::serialize() const {
     std::vector<uint8_t> buffer;
@@ -46,6 +45,5 @@ MyData MyData::deserialize(const std::vector<uint8_t>& data) {
     return myData;
 }
 
-} // namespace MyData
 } // namespace folder2
 } // namespace folder1
