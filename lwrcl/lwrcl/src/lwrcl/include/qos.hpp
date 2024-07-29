@@ -82,7 +82,7 @@ namespace lwrcl
           reliability_(custom_profile.reliability == RMWQoSReliabilityPolicy::BEST_EFFORT ? ReliabilityPolicy::BEST_EFFORT : ReliabilityPolicy::RELIABLE),
           durability_(custom_profile.durability == RMWQoSDurabilityPolicy::VOLATILE ? DurabilityPolicy::VOLATILE : DurabilityPolicy::TRANSIENT_LOCAL) {}
 
-    QoS(const QoSInitialization qos, RMWQoSProfile custom_profile)
+    QoS(const QoSInitialization qos, const RMWQoSProfile &custom_profile)
         : depth_(qos.depth_),
           history_(qos.history_ == RMWQoSHistoryPolicy::KEEP_LAST ? HistoryPolicy::KEEP_LAST : HistoryPolicy::KEEP_ALL),
           reliability_(custom_profile.reliability == RMWQoSReliabilityPolicy::BEST_EFFORT ? ReliabilityPolicy::BEST_EFFORT : ReliabilityPolicy::RELIABLE),
