@@ -5,6 +5,7 @@
 #include <string>
 
 #include "fast_dds_header.hpp"
+#include "qos.hpp"
 namespace lwrcl
 {
 
@@ -30,10 +31,10 @@ namespace lwrcl
   {
   public:
     Publisher(dds::DomainParticipant *participant, const std::string &topic,
-              const uint16_t &depth)
+              const QoS &qos)
         : participant_(participant), topic_(nullptr), publisher_(nullptr), writer_(nullptr)
     {
-      lwrcl::dds::TopicQos qos = lwrcl::dds::TOPIC_QOS_DEFAULT;
+      lwrcl::dds::TopicQos topic_qos = lwrcl::dds::TOPIC_QOS_DEFAULT;
 
       using ParentType = typename ParentTypeTraits<T>::Type;
       message_type_ = lwrcl::MessageType(new ParentType());
@@ -46,7 +47,7 @@ namespace lwrcl
       dds::Topic* retrieved_topic = dynamic_cast<eprosima::fastdds::dds::Topic*>(participant->lookup_topicdescription(topic));
       if (retrieved_topic == nullptr)
       {
-        topic_ = participant_->create_topic(topic, message_type_.get_type_support().get_type_name(), qos);
+        topic_ = participant_->create_topic(topic, message_type_.get_type_support().get_type_name(), topic_qos);
         if (!topic_)
         {
           throw std::runtime_error("Failed to create topic");
@@ -66,9 +67,31 @@ namespace lwrcl
       dds::DataWriterQos writer_qos = dds::DATAWRITER_QOS_DEFAULT;
       writer_qos.endpoint().history_memory_policy = rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
       // writer_qos.data_sharing().automatic();
-      writer_qos.history().depth = depth;
-      writer_qos.reliability().kind = dds::RELIABLE_RELIABILITY_QOS;
-      // writer_qos.durability().kind = dds::TRANSIENT_LOCAL_DURABILITY_QOS;
+      writer_qos.history().depth = qos.get_depth();
+      if(qos.get_history() == QoS::HistoryPolicy::KEEP_ALL)
+      {
+        writer_qos.history().kind = eprosima::fastdds::dds::KEEP_ALL_HISTORY_QOS;
+      }
+      else
+      {
+        writer_qos.history().kind = eprosima::fastdds::dds::KEEP_LAST_HISTORY_QOS;
+      }
+      if(qos.get_reliability() == QoS::ReliabilityPolicy::BEST_EFFORT)
+      {
+        writer_qos.reliability().kind = eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS;
+      }
+      else
+      {
+        writer_qos.reliability().kind = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS;
+      }
+      if(qos.get_durability() == QoS::DurabilityPolicy::VOLATILE)
+      {
+        writer_qos.durability().kind = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS;
+      }
+      else
+      {
+        writer_qos.durability().kind = eprosima::fastdds::dds::TRANSIENT_LOCAL_DURABILITY_QOS;
+      }
       writer_qos.data_sharing().automatic();
       // writer_qos.data_sharing().on("shared_directory");
       writer_qos.properties().properties().emplace_back("fastdds.intraprocess_delivery", "true");

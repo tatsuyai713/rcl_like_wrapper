@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "fast_dds_header.hpp"
+#include "qos.hpp"
 #include "channel.hpp"
 
 namespace lwrcl
@@ -136,21 +137,6 @@ namespace lwrcl
                         break;
                     }
                 }
-                // while (reader_->read_next_sample(&data_, &info_) == ReturnCode_t::RETCODE_OK)
-                // {
-                //     if (info_.valid_data)
-                //     {
-                //         // Zero copy
-                //         auto data_ptr = std::shared_ptr<T>(&data_, [](T*) {});
-                //         message_ptr_buffer_.emplace_back(data_ptr);
-                //         channel_->produce(subscription_callback_.get());
-                //     }
-                //     else
-                //     {
-                //         std::cerr << "Error: Invalid data" << std::endl;
-                //         break;
-                //     }
-                // }
               }
             }
           }
@@ -185,13 +171,13 @@ namespace lwrcl
   {
   public:
     Subscription(eprosima::fastdds::dds::DomainParticipant *participant, const std::string &topic,
-                 const uint16_t &depth, std::function<void(std::shared_ptr<T>)> callback_function,
+                 const QoS &qos, std::function<void(std::shared_ptr<T>)> callback_function,
                  Channel<ChannelCallback *>::SharedPtr channel)
         : participant_(participant), waitset_(callback_function, channel), topic_(nullptr), subscriber_(nullptr), reader_(nullptr)
     {
       using ParentType = typename ParentTypeTraits<T>::Type;
       message_type_ = lwrcl::MessageType(new ParentType());
-      lwrcl::dds::TopicQos qos = lwrcl::dds::TOPIC_QOS_DEFAULT;
+      lwrcl::dds::TopicQos topic_qos = lwrcl::dds::TOPIC_QOS_DEFAULT;
       if (message_type_.get_type_support().register_type(participant_) != ReturnCode_t::RETCODE_OK)
       {
         throw std::runtime_error("Failed to register message type");
@@ -200,7 +186,7 @@ namespace lwrcl
       eprosima::fastdds::dds::Topic *retrieved_topic = dynamic_cast<eprosima::fastdds::dds::Topic *>(participant->lookup_topicdescription(topic));
       if (retrieved_topic == nullptr)
       {
-        topic_ = participant_->create_topic(topic, message_type_.get_type_support().get_type_name(), qos);
+        topic_ = participant_->create_topic(topic, message_type_.get_type_support().get_type_name(), topic_qos);
         if (!topic_)
         {
           throw std::runtime_error("Failed to create topic");
@@ -219,10 +205,34 @@ namespace lwrcl
       }
       eprosima::fastdds::dds::DataReaderQos reader_qos = eprosima::fastdds::dds::DATAREADER_QOS_DEFAULT;
       reader_qos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
-      reader_qos.history().depth = depth;
-      reader_qos.reliability().kind = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS;
+      reader_qos.history().depth = qos.get_depth();
+      if(qos.get_history() == QoS::HistoryPolicy::KEEP_ALL)
+      {
+        reader_qos.history().kind = eprosima::fastdds::dds::KEEP_ALL_HISTORY_QOS;
+      }
+      else
+      {
+        reader_qos.history().kind = eprosima::fastdds::dds::KEEP_LAST_HISTORY_QOS;
+      }
+      if(qos.get_reliability() == QoS::ReliabilityPolicy::BEST_EFFORT)
+      {
+        reader_qos.reliability().kind = eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS;
+      }
+      else
+      {
+        reader_qos.reliability().kind = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS;
+      }
+      if(qos.get_durability() == QoS::DurabilityPolicy::VOLATILE)
+      {
+        reader_qos.durability().kind = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS;
+      }
+      else
+      {
+        reader_qos.durability().kind = eprosima::fastdds::dds::TRANSIENT_LOCAL_DURABILITY_QOS;
+      }
       reader_qos.data_sharing().automatic();
       reader_qos.properties().properties().emplace_back("fastdds.intraprocess_delivery", "true");
+
       reader_ = subscriber_->create_datareader(topic_, reader_qos, nullptr);
       if (!reader_)
       {

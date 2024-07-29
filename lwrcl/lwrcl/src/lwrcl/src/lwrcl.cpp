@@ -1170,17 +1170,6 @@ namespace lwrcl
     return clock_;
   }
 
-  QoS::QoS() : depth_(1) {}
-  QoS::QoS(uint16_t depth) : depth_(depth) {}
-  QoS::QoS(const QoS &qos) : depth_(qos.depth_) {}
-  QoS::~QoS() {}
-  QoS QoS::operator=(const QoS &qos)
-  {
-    depth_ = qos.depth_;
-    return *this;
-  }
-  uint16_t QoS::get_depth() const { return depth_; }
-
   bool ok()
   {
     if (!global_stop_flag.load())
@@ -1343,4 +1332,20 @@ namespace lwrcl
     std::this_thread::sleep_for(std::chrono::nanoseconds(duration.nanoseconds()));
   }
 
+  // Default QoS profile
+  RMWQoSProfile rmw_qos_profile_default = {
+      10,
+      RMWQoSHistoryPolicy::KEEP_LAST,
+      RMWQoSReliabilityPolicy::RELIABLE,
+      RMWQoSDurabilityPolicy::VOLATILE};
+
+  QoS KeepLast(size_t depth)
+  {
+    return QoS(QoS::HistoryPolicy::KEEP_LAST, RMWQoSProfile{depth, RMWQoSHistoryPolicy::KEEP_LAST, RMWQoSReliabilityPolicy::RELIABLE, RMWQoSDurabilityPolicy::VOLATILE});
+  }
+
+  QoS KeepAll()
+  {
+    return QoS(QoS::HistoryPolicy::KEEP_ALL, rmw_qos_profile_default);
+  }
 } // namespace lwrcl

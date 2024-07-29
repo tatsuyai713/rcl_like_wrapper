@@ -26,7 +26,6 @@
 namespace lwrcl
 {
   class Logger;
-  class QoS;
   class Node;
   class IService;
   class IClient;
@@ -168,21 +167,6 @@ namespace lwrcl
     }
   };
 
-  // Quality of Service class
-  class QoS
-  {
-  public:
-    QoS();
-    QoS(uint16_t depth);
-    QoS(const QoS &qos);
-    QoS operator=(const QoS &qos);
-    ~QoS();
-    uint16_t get_depth() const;
-
-  private:
-    uint16_t depth_;
-  };
-
   class Node : public std::enable_shared_from_this<Node>
   {
   public:
@@ -205,17 +189,18 @@ namespace lwrcl
     template <typename T>
     std::shared_ptr<Publisher<T>> create_publisher(const std::string &topic, const uint16_t &depth)
     {
+      QoS qos(depth);
       auto publisher =
-          std::make_shared<Publisher<T>>(participant_.get(), std::string("rt/") + topic, depth);
+          std::make_shared<Publisher<T>>(participant_.get(), std::string("rt/") + topic, qos);
       publisher_list_.push_front(publisher);
       return publisher;
     }
 
     template <typename T>
-    std::shared_ptr<Publisher<T>> create_publisher(const std::string &topic, const QoS &depth)
+    std::shared_ptr<Publisher<T>> create_publisher(const std::string &topic, const QoS &qos)
     {
       auto publisher = std::make_shared<Publisher<T>>(
-          participant_.get(), std::string("rt/") + topic, depth.get_depth());
+          participant_.get(), std::string("rt/") + topic, qos);
       publisher_list_.push_front(publisher);
       return publisher;
     }
@@ -225,19 +210,20 @@ namespace lwrcl
         const std::string &topic, const uint16_t &depth,
         std::function<void(std::shared_ptr<T>)> callback_function)
     {
+      QoS qos(depth);
       auto subscription = std::make_shared<Subscription<T>>(
-          participant_.get(), std::string("rt/") + topic, depth, callback_function, channel_);
+          participant_.get(), std::string("rt/") + topic, qos, callback_function, channel_);
       subscription_list_.push_front(subscription);
       return subscription;
     }
 
     template <typename T>
     std::shared_ptr<Subscription<T>> create_subscription(
-        const std::string &topic, const QoS &depth,
+        const std::string &topic, const QoS &qos,
         std::function<void(std::shared_ptr<T>)> callback_function)
     {
       auto subscription = std::make_shared<Subscription<T>>(
-          participant_.get(), std::string("rt/") + topic, depth.get_depth(), callback_function,
+          participant_.get(), std::string("rt/") + topic, qos, callback_function,
           channel_);
       subscription_list_.push_front(subscription);
       return subscription;
@@ -469,8 +455,13 @@ namespace lwrcl
       request_topic_name_ = service_name_ + "_Request";
       response_topic_name_ = service_name_ + "_Response";
 
+      QoS service_qos;
+      service_qos.keep_last(10);
+      service_qos.reliability(QoS::ReliabilityPolicy::RELIABLE);
+      service_qos.durability(QoS::DurabilityPolicy::VOLATILE);
+
       publisher_ = std::make_shared<Publisher<typename T::Response>>(
-          participant_.get(), std::string("rp/") + response_topic_name_, 1);
+          participant_.get(), std::string("rp/") + response_topic_name_, service_qos);
 
       request_callback_function_ = [this](std::shared_ptr<typename T::Request> request)
       {
@@ -480,7 +471,7 @@ namespace lwrcl
       };
 
       subscription_ = std::make_shared<Subscription<typename T::Request>>(
-          participant_.get(), std::string("rp/") + request_topic_name_, 1, request_callback_function_,
+          participant_.get(), std::string("rp/") + request_topic_name_, service_qos, request_callback_function_,
           channel_);
     }
 
@@ -558,11 +549,16 @@ namespace lwrcl
       request_topic_name_ = service_name_ + "_Request";
       response_topic_name_ = service_name_ + "_Response";
 
+      QoS client_qos;
+      client_qos.keep_last(10);
+      client_qos.reliability(QoS::ReliabilityPolicy::RELIABLE);
+      client_qos.durability(QoS::DurabilityPolicy::VOLATILE);
+
       publisher_ = std::make_shared<Publisher<typename T::Request>>(
-          participant_.get(), std::string("rp/") + request_topic_name_, 1);
+          participant_.get(), std::string("rp/") + request_topic_name_, client_qos);
 
       subscription_ = std::make_shared<Subscription<typename T::Response>>(
-          participant_.get(), std::string("rp/") + response_topic_name_, 1,
+          participant_.get(), std::string("rp/") + response_topic_name_, client_qos,
           std::function<void(std::shared_ptr<typename T::Response> )>(
               std::bind(&Client::handle_response, this, std::placeholders::_1)),
           channel_);
