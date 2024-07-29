@@ -1333,19 +1333,43 @@ namespace lwrcl
   }
 
   // Default QoS profile
-  RMWQoSProfile rmw_qos_profile_default = {
-      10,
+  const RMWQoSProfile rmw_qos_profile_default = {
+      10, // depth
       RMWQoSHistoryPolicy::KEEP_LAST,
       RMWQoSReliabilityPolicy::RELIABLE,
       RMWQoSDurabilityPolicy::VOLATILE};
 
-  QoS KeepLast(size_t depth)
+  const RMWQoSProfile rmw_qos_profile_sensor_data = {
+      5, // depth
+      RMWQoSHistoryPolicy::KEEP_LAST,
+      RMWQoSReliabilityPolicy::BEST_EFFORT,
+      RMWQoSDurabilityPolicy::VOLATILE};
+
+  const RMWQoSProfile rmw_qos_profile_parameters = {
+      1000, // depth
+      RMWQoSHistoryPolicy::KEEP_LAST,
+      RMWQoSReliabilityPolicy::RELIABLE,
+      RMWQoSDurabilityPolicy::VOLATILE};
+
+  const RMWQoSProfile rmw_qos_profile_services_default = {
+      10, // depth
+      RMWQoSHistoryPolicy::KEEP_LAST,
+      RMWQoSReliabilityPolicy::RELIABLE,
+      RMWQoSDurabilityPolicy::VOLATILE};
+
+  const RMWQoSProfile rmw_qos_profile_parameter_events = {
+      1000, // depth
+      RMWQoSHistoryPolicy::KEEP_LAST,
+      RMWQoSReliabilityPolicy::RELIABLE,
+      RMWQoSDurabilityPolicy::VOLATILE};
+
+  QoSInitialization KeepLast(size_t depth)
   {
-    return QoS(QoS::HistoryPolicy::KEEP_LAST, RMWQoSProfile{depth, RMWQoSHistoryPolicy::KEEP_LAST, RMWQoSReliabilityPolicy::RELIABLE, RMWQoSDurabilityPolicy::VOLATILE});
+    return QoSInitialization(RMWQoSHistoryPolicy::KEEP_LAST, depth);
   }
 
-  QoS KeepAll()
+  QoSInitialization KeepAll()
   {
-    return QoS(QoS::HistoryPolicy::KEEP_ALL, rmw_qos_profile_default);
+    return QoSInitialization(RMWQoSHistoryPolicy::KEEP_ALL, 1000);
   }
 } // namespace lwrcl

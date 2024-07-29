@@ -455,10 +455,8 @@ namespace lwrcl
       request_topic_name_ = service_name_ + "_Request";
       response_topic_name_ = service_name_ + "_Response";
 
-      QoS service_qos;
-      service_qos.keep_last(10);
-      service_qos.reliability(QoS::ReliabilityPolicy::RELIABLE);
-      service_qos.durability(QoS::DurabilityPolicy::VOLATILE);
+      RMWQoSProfile rmw_qos_profile_services = rmw_qos_profile_services_default;
+      QoS service_qos(KeepLast(10), rmw_qos_profile_services);
 
       publisher_ = std::make_shared<Publisher<typename T::Response>>(
           participant_.get(), std::string("rp/") + response_topic_name_, service_qos);
@@ -549,10 +547,8 @@ namespace lwrcl
       request_topic_name_ = service_name_ + "_Request";
       response_topic_name_ = service_name_ + "_Response";
 
-      QoS client_qos;
-      client_qos.keep_last(10);
-      client_qos.reliability(QoS::ReliabilityPolicy::RELIABLE);
-      client_qos.durability(QoS::DurabilityPolicy::VOLATILE);
+      RMWQoSProfile rmw_qos_profile_services = rmw_qos_profile_services_default;
+      QoS client_qos(KeepLast(10), rmw_qos_profile_services);
 
       publisher_ = std::make_shared<Publisher<typename T::Request>>(
           participant_.get(), std::string("rp/") + request_topic_name_, client_qos);
