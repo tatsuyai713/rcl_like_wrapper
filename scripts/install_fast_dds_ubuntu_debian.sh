@@ -7,6 +7,10 @@ fast_dds_gen_version="3.3.0"
 
 FAST_DDS_WORK_DIR=./dds_build
 
+wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | gpg --dearmor - | sudo tee /etc/apt/trusted.gpg.d/kitware.gpg >/dev/null
+
+sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $(lsb_release -cs) main"
+
 sudo apt update
 sudo apt install -y gcc g++ make cmake automake autoconf unzip git vim openssl gcc make cmake curl tar wget p11-kit
 
