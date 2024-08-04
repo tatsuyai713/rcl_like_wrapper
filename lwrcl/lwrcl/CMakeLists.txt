@@ -32,4 +32,6 @@ include_directories(/opt/fast-dds-libs/include
                     /opt/fast-dds-libs/include/optionparser)
 link_directories(/opt/fast-dds-libs/lib)
 
+add_subdirectory(src/tf2)
+add_subdirectory(src/tf2_ros)
 add_subdirectory(src/lwrcl)

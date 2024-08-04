@@ -33,7 +33,5 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../../lwrcl/src/lwrcl/include
                     /opt/fast-dds-libs/include/optionparser)
 link_directories(/opt/fast-dds-libs/lib)
 
-add_subdirectory(src/tf2)
-add_subdirectory(src/tf2_ros)
 add_subdirectory(src/domain_participant_counter)
 add_subdirectory(src/yaml-cpp)
