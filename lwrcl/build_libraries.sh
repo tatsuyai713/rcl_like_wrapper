@@ -21,7 +21,7 @@ sudo mkdir -p $INSTALL_PATH
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$DDS_PATH/lib
 
-cmake ..  -DCMAKE_BUILD_TYPE=Debug \
+cmake ..  -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_SYSTEM_PREFIX_PATH=$DDS_PATH \
   -DCMAKE_PREFIX_PATH=$DDS_PATH \
   -Dfastcdr_DIR=$DDS_PATH/lib/cmake/fastcdr/ \
