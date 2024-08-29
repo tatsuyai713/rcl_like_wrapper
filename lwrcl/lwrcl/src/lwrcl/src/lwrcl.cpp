@@ -18,6 +18,7 @@
 namespace lwrcl
 {
   class Node;
+  NodeParameters node_parameters;
 
   std::atomic<bool> global_stop_flag(false);
 
@@ -287,12 +288,9 @@ namespace lwrcl
 
   namespace executors
   {
-    SingleThreadedExecutor::SingleThreadedExecutor() {}
+        SingleThreadedExecutor::SingleThreadedExecutor() : stop_flag_(true) {}
 
-    SingleThreadedExecutor::~SingleThreadedExecutor()
-    {
-      cancel();
-    }
+        SingleThreadedExecutor::~SingleThreadedExecutor() { clear(); }
 
     void SingleThreadedExecutor::add_node(Node::SharedPtr node)
     {
@@ -316,7 +314,7 @@ namespace lwrcl
       }
     }
 
-    void SingleThreadedExecutor::cancel()
+    void SingleThreadedExecutor::clear()
     {
       std::lock_guard<std::mutex> lock(mutex_);
       for (auto &node : nodes_)
@@ -330,12 +328,19 @@ namespace lwrcl
         }
       }
       nodes_.clear();
+      stop_flag_ = true;
+    }
+
+    void SingleThreadedExecutor::cancel()
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      stop_flag_ = true;
     }
 
     void SingleThreadedExecutor::spin()
     {
-      bool exit_flag = false;
-      while (global_stop_flag.load() == false && exit_flag == false)
+      stop_flag_ = false;
+      while (global_stop_flag.load() == false && stop_flag_ == false)
       {
         std::lock_guard<std::mutex> lock(mutex_);
         for (auto node : nodes_)
@@ -346,17 +351,14 @@ namespace lwrcl
             {
               lwrcl::spin_some(node);
             }
-            else
-            {
-              exit_flag = true;
-            }
-          }
-          else
-          {
-            exit_flag = true;
           }
         }
         std::this_thread::sleep_for(std::chrono::microseconds(10));
+      }
+
+      if (global_stop_flag.load() == true)
+      {
+        clear();
       }
     }
 
@@ -375,12 +377,9 @@ namespace lwrcl
       }
     }
 
-    MultiThreadedExecutor::MultiThreadedExecutor() {}
+    MultiThreadedExecutor::MultiThreadedExecutor() : stop_flag_(true) {}
 
-    MultiThreadedExecutor::~MultiThreadedExecutor()
-    {
-      cancel();
-    }
+    MultiThreadedExecutor::~MultiThreadedExecutor() { clear(); }
 
     void MultiThreadedExecutor::add_node(Node::SharedPtr node)
     {
@@ -391,7 +390,7 @@ namespace lwrcl
       }
       else
       {
-        std::cerr << "Error: Node pointer is null, cannot add to executor." << std::endl;
+        std::runtime_error("Error: Node pointer is null, cannot add to executor.");
       }
     }
 
@@ -413,6 +412,22 @@ namespace lwrcl
         {
           if (node->closed_ == false)
           {
+            node->stop_spin();
+          }
+        }
+      }
+      stop_flag_ = true;
+    }
+
+    void MultiThreadedExecutor::clear()
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      for (auto node : nodes_)
+      {
+        if (node != nullptr)
+        {
+          if (node->closed_ == false)
+          {
             node->shutdown();
           }
         }
@@ -422,52 +437,54 @@ namespace lwrcl
         }
       }
       nodes_.clear();
+      stop_flag_ = true;
     }
 
-    void MultiThreadedExecutor::spin()
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      for (auto node : nodes_)
-      {
-        threads_.emplace_back([this, node]()
-                              {
-            if(node != nullptr)
+        void MultiThreadedExecutor::spin()
+        {
+          stop_flag_ = false;
+          for (auto node : nodes_)
+          {
+            threads_.emplace_back([this, node]()
+                                  {
+      if (node != nullptr) {
+        if (node->closed_ == false) {
+          lwrcl::spin(node);
+        }
+      } else {
+        std::runtime_error("Error: Node pointer is null, cannot add to executor.");
+      } });
+          }
+
+          for (auto &thread : threads_)
+          {
+            if (thread.joinable())
+            {
+              thread.join();
+            }
+          }
+          threads_.clear();
+
+          if (global_stop_flag.load() == true)
+          {
+            clear();
+          }
+        }
+
+        void MultiThreadedExecutor::spin_some()
+        {
+          std::lock_guard<std::mutex> lock(mutex_);
+          for (auto node : nodes_)
+          {
+            if (node != nullptr)
             {
               if (node->closed_ == false)
               {
-                  lwrcl::spin(node);
+                lwrcl::spin_some(node);
               }
             }
             else
             {
-                std::cerr << "node pointer is invalid!" << std::endl;
-            } });
-      }
-
-      for (auto &thread : threads_)
-      {
-        if (thread.joinable())
-        {
-          thread.join();
-        }
-      }
-      threads_.clear();
-    }
-
-    void MultiThreadedExecutor::spin_some()
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
-      for (auto node : nodes_)
-      {
-        if (node != nullptr)
-        {
-          if (node->closed_ == false)
-          {
-            lwrcl::spin_some(node);
-          }
-        }
-        else
-        {
           std::cerr << "node pointer is invalid!" << std::endl;
         }
       }
@@ -571,10 +588,12 @@ namespace lwrcl
   }
 
   Node::Node(int domain_id)
-      : participant_(nullptr),
+      : factory_(eprosima::fastdds::dds::DomainParticipantFactory::get_instance()),
+        participant_(nullptr),
         channel_(std::make_shared<Channel<ChannelCallback *>>()),
         clock_(std::make_unique<Clock>()),
-        name_("lwrcl_default_node")
+        name_("lwrcl_default_node"),
+        stop_flag_(false)
   {
     dds::DomainParticipantQos participant_qos = dds::PARTICIPANT_QOS_DEFAULT;
 
@@ -594,24 +613,26 @@ namespace lwrcl
 
     // eprosima::fastdds::dds::Log::SetVerbosity(eprosima::fastdds::dds::Log::Info);
 
-    auto participant_factory = eprosima::fastdds::dds::DomainParticipantFactory::get_instance();
-    participant_factory->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
+    factory_->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
 
     participant_ = std::shared_ptr<eprosima::fastdds::dds::DomainParticipant>(
-        participant_factory->create_participant(domain_id, participant_qos),
+        factory_->create_participant(domain_id, participant_qos),
         DomainParticipantDeleter());
     if (!participant_)
     {
       throw std::runtime_error("Failed to create domain participant");
     }
     closed_ = false;
+    participant_owned_ = true;
   }
 
   Node::Node(int domain_id, const std::string &name)
-      : participant_(nullptr),
+      : factory_(eprosima::fastdds::dds::DomainParticipantFactory::get_instance()),
+        participant_(nullptr),
         channel_(std::make_shared<Channel<ChannelCallback *>>()),
         clock_(std::make_unique<Clock>()),
-        name_(name)
+        name_(name),
+        stop_flag_(false)
   {
     dds::DomainParticipantQos participant_qos = dds::PARTICIPANT_QOS_DEFAULT;
 
@@ -631,24 +652,26 @@ namespace lwrcl
 
     // eprosima::fastdds::dds::Log::SetVerbosity(eprosima::fastdds::dds::Log::Info);
 
-    auto participant_factory = eprosima::fastdds::dds::DomainParticipantFactory::get_instance();
-    participant_factory->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
+    factory_->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
 
     participant_ = std::shared_ptr<eprosima::fastdds::dds::DomainParticipant>(
-        participant_factory->create_participant(domain_id, participant_qos),
+        factory_->create_participant(domain_id, participant_qos),
         DomainParticipantDeleter());
     if (!participant_)
     {
       throw std::runtime_error("Failed to create domain participant");
     }
     closed_ = false;
+    participant_owned_ = true;
   }
 
   Node::Node(const std::string &name)
-      : participant_(nullptr),
+      : factory_(eprosima::fastdds::dds::DomainParticipantFactory::get_instance()),
+        participant_(nullptr),
         channel_(std::make_shared<Channel<ChannelCallback *>>()),
         clock_(std::make_unique<Clock>()),
-        name_(name)
+        name_(name),
+        stop_flag_(false)
   {
     int domain_id = 0; // Default domain ID
     dds::DomainParticipantQos participant_qos = dds::PARTICIPANT_QOS_DEFAULT;
@@ -669,52 +692,55 @@ namespace lwrcl
 
     // eprosima::fastdds::dds::Log::SetVerbosity(eprosima::fastdds::dds::Log::Info);
 
-    auto participant_factory = eprosima::fastdds::dds::DomainParticipantFactory::get_instance();
-    participant_factory->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
+    factory_->load_XML_profiles_file("/opt/fast-dds/fastdds.xml");
 
     participant_ = std::shared_ptr<eprosima::fastdds::dds::DomainParticipant>(
-        participant_factory->create_participant(domain_id, participant_qos),
+        factory_->create_participant(domain_id, participant_qos),
         DomainParticipantDeleter());
     if (!participant_)
     {
       throw std::runtime_error("Failed to create domain participant");
     }
     closed_ = false;
+    participant_owned_ = true;
   }
 
   Node::Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant)
-      : participant_(participant),
+      : factory_(nullptr),
+        participant_(participant),
         channel_(std::make_shared<Channel<ChannelCallback *>>()),
         clock_(std::make_unique<Clock>()),
-        name_("lwrcl_default_node")
+        name_("lwrcl_default_node"),
+        stop_flag_(false)
   {
     if (!participant_)
     {
       throw std::runtime_error("Failed to create domain participant");
     }
     closed_ = false;
+    participant_owned_ = false;
   }
 
   Node::Node(
       std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant, const std::string &name)
-      : participant_(participant),
+      : factory_(nullptr),
+        participant_(participant),
         channel_(std::make_shared<Channel<ChannelCallback *>>()),
         clock_(std::make_unique<Clock>()),
-        name_(name)
+        name_(name),
+        stop_flag_(false)
   {
     if (!participant_)
     {
       throw std::runtime_error("Failed to create domain participant");
     }
     closed_ = false;
+    participant_owned_ = false;
   }
 
   Node::~Node()
   {
-    if (closed_ == false)
-    {
-      this->shutdown();
-    }
+    shutdown();
   }
 
   std::shared_ptr<Node> Node::make_shared(int domain_id)
@@ -781,6 +807,11 @@ namespace lwrcl
         }
       }
     }
+
+    if (global_stop_flag.load() == true)
+    {
+      shutdown();
+    }
   }
 
   void Node::stop_spin()
@@ -807,7 +838,6 @@ namespace lwrcl
 
   void Node::shutdown()
   {
-    printf("Shutting down %s node...\n", name_.c_str());
     publisher_list_.clear();
     for (auto &subscriber : subscription_list_)
     {
@@ -831,6 +861,8 @@ namespace lwrcl
     }
     closed_ = true;
   }
+
+  Clock::SharedPtr Node::get_clock() { return clock_; }
 
   void Node::set_parameters(const std::vector<std::shared_ptr<ParameterBase>> &parameters)
   {
@@ -1165,11 +1197,6 @@ namespace lwrcl
     }
   }
 
-  Clock::SharedPtr Node::get_clock() const
-  {
-    return clock_;
-  }
-
   bool ok()
   {
     if (!global_stop_flag.load())
@@ -1196,6 +1223,8 @@ namespace lwrcl
       std::cerr << "node pointer is invalid!" << std::endl;
     }
   }
+
+  void stop_spin() { global_stop_flag.store(true); }
 
   void spin_some(std::shared_ptr<Node> node)
   {
@@ -1242,8 +1271,6 @@ namespace lwrcl
 
     return "";
   }
-
-  NodeParameters node_parameters;
 
   void load_parameters(const std::string &file_path)
   {

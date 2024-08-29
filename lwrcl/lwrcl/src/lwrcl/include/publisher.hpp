@@ -52,10 +52,12 @@ namespace lwrcl
         {
           throw std::runtime_error("Failed to create topic");
         }
+        topic_owned_ = true;
       }
       else
       {
         topic_ = retrieved_topic;
+        topic_owned_ = false;
       }
 
       publisher_ = participant_->create_publisher(dds::PUBLISHER_QOS_DEFAULT);
@@ -114,7 +116,7 @@ namespace lwrcl
       {
         participant_->delete_publisher(publisher_);
       }
-      if (topic_ != nullptr)
+      if (topic_ != nullptr && topic_owned_)
       {
         participant_->delete_topic(topic_);
       }
@@ -144,6 +146,7 @@ namespace lwrcl
     dds::Publisher *publisher_;
     dds::DataWriter *writer_;
     PublisherListener listener_;
+    bool topic_owned_;
   };
 } // namespace lwrcl
 

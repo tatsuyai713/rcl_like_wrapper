@@ -191,10 +191,12 @@ namespace lwrcl
         {
           throw std::runtime_error("Failed to create topic");
         }
+        topic_owned_ = true;
       }
       else
       {
         topic_ = retrieved_topic;
+        topic_owned_ = false;
       }
 
       subscriber_ = participant_->create_subscriber(eprosima::fastdds::dds::SUBSCRIBER_QOS_DEFAULT);
@@ -255,7 +257,7 @@ namespace lwrcl
       {
         participant_->delete_subscriber(subscriber_);
       }
-      if (topic_ != nullptr)
+      if (topic_ != nullptr && topic_owned_)
       {
         participant_->delete_topic(topic_);
       }
@@ -279,6 +281,7 @@ namespace lwrcl
     eprosima::fastdds::dds::Subscriber *subscriber_;
     eprosima::fastdds::dds::DataReader *reader_;
     lwrcl::MessageType message_type_;
+    bool topic_owned_;
   };
 
 } // namespace lwrcl

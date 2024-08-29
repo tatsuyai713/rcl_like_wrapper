@@ -175,7 +175,7 @@ namespace lwrcl
     // Constructor
     Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant);
     Node(std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant,
-        const std::string &name);
+         const std::string &name);
     // Destructor
     virtual ~Node();
 
@@ -183,7 +183,7 @@ namespace lwrcl
     std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> get_participant() const;
     std::string get_name() const;
     Logger get_logger() const;
-    virtual Clock::SharedPtr get_clock() const;
+    virtual Clock::SharedPtr get_clock();
 
     // Create publisher, subscription, service, client, timer
     template <typename T>
@@ -309,6 +309,8 @@ namespace lwrcl
     void get_parameter(const std::string &name, double &double_data) const;
     void get_parameter(const std::string &name, std::string &string_data) const;
 
+    bool closed_;
+    bool stop_flag_;
     void stop_spin();
 
   private:
@@ -336,21 +338,18 @@ namespace lwrcl
     };
 
     // Member variables
+    eprosima::fastdds::dds::DomainParticipantFactory *factory_;
     std::shared_ptr<eprosima::fastdds::dds::DomainParticipant> participant_;
     Channel<ChannelCallback *>::SharedPtr channel_;
     Clock::SharedPtr clock_;
     std::string name_;
+    bool participant_owned_;
     std::forward_list<std::shared_ptr<IPublisher>> publisher_list_;
     std::forward_list<std::shared_ptr<ISubscription>> subscription_list_;
     std::forward_list<std::shared_ptr<ITimerBase>> timer_list_;
     std::forward_list<std::shared_ptr<IService>> service_list_;
     std::forward_list<std::shared_ptr<IClient>> client_list_;
     Parameters parameters_;
-  
-  public:
-    // Public member variables
-    bool closed_;
-    bool stop_flag_;
   };
 
   // Executor classes
@@ -366,12 +365,14 @@ namespace lwrcl
       void add_node(Node::SharedPtr node);
       void remove_node(Node::SharedPtr node);
       void cancel();
+      void clear();
       void spin();
       void spin_some();
 
     private:
       std::vector<Node::SharedPtr> nodes_; // List of nodes managed by the executor.
-      std::mutex mutex_;                   // Mutex for thread-safe access to the nodes list.
+      mutable std::mutex mutex_;           // Mutex for thread-safe access to the nodes list.
+      bool stop_flag_;                     // Flag to stop the executor.
     };
 
     // Executor that manages and executes nodes, each in its own thread, allowing for parallel processing.
@@ -384,6 +385,7 @@ namespace lwrcl
       void add_node(Node::SharedPtr node);
       void remove_node(Node::SharedPtr node);
       void cancel();
+      void clear();
       void spin();
       void spin_some();
       int get_number_of_threads() const;
@@ -391,7 +393,8 @@ namespace lwrcl
     private:
       std::vector<Node::SharedPtr> nodes_; // List of nodes managed by the executor.
       std::vector<std::thread> threads_;   // Threads created for each node for parallel execution.
-      mutable std::mutex mutex_;           // Mutex for thread-safe access to the nodes and threads lists.
+      mutable std::mutex mutex_;           // Mutex for thread-safe access to the nodes list.
+      bool stop_flag_;                     // Flag to stop the executor.
     };
   } // namespace executors
 
@@ -463,7 +466,7 @@ namespace lwrcl
 
       request_callback_function_ = [this](std::shared_ptr<typename T::Request> request)
       {
-        std::shared_ptr<typename T::Response> response = std::make_shared<typename T::Response> ();
+        std::shared_ptr<typename T::Response> response = std::make_shared<typename T::Response>();
         callback_function_(request, response);
         publisher_->publish(response);
       };
@@ -555,7 +558,7 @@ namespace lwrcl
 
       subscription_ = std::make_shared<Subscription<typename T::Response>>(
           participant_.get(), std::string("rp/") + response_topic_name_, client_qos,
-          std::function<void(std::shared_ptr<typename T::Response> )>(
+          std::function<void(std::shared_ptr<typename T::Response>)>(
               std::bind(&Client::handle_response, this, std::placeholders::_1)),
           channel_);
     }
@@ -578,7 +581,7 @@ namespace lwrcl
 
     void stop() override { subscription_->stop(); }
 
-    std::shared_ptr<FutureBase> async_send_request(std::shared_ptr<typename T::Request>  request)
+    std::shared_ptr<FutureBase> async_send_request(std::shared_ptr<typename T::Request> request)
     {
       auto promise = std::make_shared<std::promise<std::shared_ptr<typename T::Response>>>();
       auto future = promise->get_future().share();
