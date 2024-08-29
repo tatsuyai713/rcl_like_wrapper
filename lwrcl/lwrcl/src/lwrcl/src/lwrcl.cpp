@@ -288,9 +288,9 @@ namespace lwrcl
 
   namespace executors
   {
-        SingleThreadedExecutor::SingleThreadedExecutor() : stop_flag_(true) {}
+    SingleThreadedExecutor::SingleThreadedExecutor() : stop_flag_(true) {}
 
-        SingleThreadedExecutor::~SingleThreadedExecutor() { clear(); }
+    SingleThreadedExecutor::~SingleThreadedExecutor() { clear(); }
 
     void SingleThreadedExecutor::add_node(Node::SharedPtr node)
     {
@@ -440,13 +440,13 @@ namespace lwrcl
       stop_flag_ = true;
     }
 
-        void MultiThreadedExecutor::spin()
-        {
-          stop_flag_ = false;
-          for (auto node : nodes_)
-          {
-            threads_.emplace_back([this, node]()
-                                  {
+    void MultiThreadedExecutor::spin()
+    {
+      stop_flag_ = false;
+      for (auto node : nodes_)
+      {
+        threads_.emplace_back([this, node]()
+                              {
       if (node != nullptr) {
         if (node->closed_ == false) {
           lwrcl::spin(node);
@@ -454,37 +454,37 @@ namespace lwrcl
       } else {
         std::runtime_error("Error: Node pointer is null, cannot add to executor.");
       } });
-          }
+      }
 
-          for (auto &thread : threads_)
-          {
-            if (thread.joinable())
-            {
-              thread.join();
-            }
-          }
-          threads_.clear();
+      for (auto &thread : threads_)
+      {
+        if (thread.joinable())
+        {
+          thread.join();
+        }
+      }
+      threads_.clear();
 
-          if (global_stop_flag.load() == true)
+      if (global_stop_flag.load() == true)
+      {
+        clear();
+      }
+    }
+
+    void MultiThreadedExecutor::spin_some()
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      for (auto node : nodes_)
+      {
+        if (node != nullptr)
+        {
+          if (node->closed_ == false)
           {
-            clear();
+            lwrcl::spin_some(node);
           }
         }
-
-        void MultiThreadedExecutor::spin_some()
+        else
         {
-          std::lock_guard<std::mutex> lock(mutex_);
-          for (auto node : nodes_)
-          {
-            if (node != nullptr)
-            {
-              if (node->closed_ == false)
-              {
-                lwrcl::spin_some(node);
-              }
-            }
-            else
-            {
           std::cerr << "node pointer is invalid!" << std::endl;
         }
       }

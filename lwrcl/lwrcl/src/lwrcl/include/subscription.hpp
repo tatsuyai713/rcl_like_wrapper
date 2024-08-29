@@ -124,18 +124,19 @@ namespace lwrcl
 
                 while (reader_->take_next_sample(&data_, &info_) == ReturnCode_t::RETCODE_OK)
                 {
-                    if (info_.valid_data)
-                    {
-                        // copy
-                        auto data_ptr = std::shared_ptr<T>(new T(data_), [](T* ptr) { delete ptr; });
-                        message_ptr_buffer_.emplace_back(data_ptr);
-                        channel_->produce(subscription_callback_.get());
-                    }
-                    else
-                    {
-                        std::cerr << "Error: Invalid data" << std::endl;
-                        break;
-                    }
+                  if (info_.valid_data)
+                  {
+                    // copy
+                    auto data_ptr = std::shared_ptr<T>(new T(data_), [](T *ptr)
+                                                       { delete ptr; });
+                    message_ptr_buffer_.emplace_back(data_ptr);
+                    channel_->produce(subscription_callback_.get());
+                  }
+                  else
+                  {
+                    std::cerr << "Error: Invalid data" << std::endl;
+                    break;
+                  }
                 }
               }
             }
@@ -208,7 +209,7 @@ namespace lwrcl
       eprosima::fastdds::dds::DataReaderQos reader_qos = eprosima::fastdds::dds::DATAREADER_QOS_DEFAULT;
       reader_qos.endpoint().history_memory_policy = eprosima::fastrtps::rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
       reader_qos.history().depth = qos.get_depth();
-      if(qos.get_history() == QoS::HistoryPolicy::KEEP_ALL)
+      if (qos.get_history() == QoS::HistoryPolicy::KEEP_ALL)
       {
         reader_qos.history().kind = eprosima::fastdds::dds::KEEP_ALL_HISTORY_QOS;
       }
@@ -216,7 +217,7 @@ namespace lwrcl
       {
         reader_qos.history().kind = eprosima::fastdds::dds::KEEP_LAST_HISTORY_QOS;
       }
-      if(qos.get_reliability() == QoS::ReliabilityPolicy::BEST_EFFORT)
+      if (qos.get_reliability() == QoS::ReliabilityPolicy::BEST_EFFORT)
       {
         reader_qos.reliability().kind = eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS;
       }
@@ -224,7 +225,7 @@ namespace lwrcl
       {
         reader_qos.reliability().kind = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS;
       }
-      if(qos.get_durability() == QoS::DurabilityPolicy::VOLATILE)
+      if (qos.get_durability() == QoS::DurabilityPolicy::VOLATILE)
       {
         reader_qos.durability().kind = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS;
       }

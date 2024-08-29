@@ -53,7 +53,7 @@ namespace lwrcl
   class TimerBase : public ITimerBase, public std::enable_shared_from_this<TimerBase>
   {
   public:
-    TimerBase(Duration period, std::function<void()> callback_function, Channel<ChannelCallback*>::SharedPtr channel, Clock::ClockType clock_type)
+    TimerBase(Duration period, std::function<void()> callback_function, Channel<ChannelCallback *>::SharedPtr channel, Clock::ClockType clock_type)
         : clock_type_(clock_type), period_(period), channel_(channel), stop_flag_(false)
     {
       timer_callback_ = std::make_unique<TimerCallback>(callback_function);
@@ -121,7 +121,7 @@ namespace lwrcl
     Duration period_;
     std::unique_ptr<TimerCallback> timer_callback_;
     std::thread worker_;
-    Channel<ChannelCallback*>::SharedPtr channel_;
+    Channel<ChannelCallback *>::SharedPtr channel_;
     bool stop_flag_;
   };
 

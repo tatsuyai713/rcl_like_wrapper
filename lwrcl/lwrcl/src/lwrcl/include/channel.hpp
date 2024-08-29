@@ -37,7 +37,7 @@ namespace lwrcl
       std::unique_lock<std::mutex> lock{mtx_};
       // cv_.wait(lock, [this]
       //          { return !queue_.empty() || closed_; });
-      
+
       if (!cv_.wait_for(lock, std::chrono::milliseconds(100), [this]
                         { return !queue_.empty() || closed_; }))
       {

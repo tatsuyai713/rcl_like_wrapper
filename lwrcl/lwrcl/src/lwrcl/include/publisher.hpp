@@ -44,7 +44,7 @@ namespace lwrcl
         throw std::runtime_error("Failed to register message type");
       }
 
-      dds::Topic* retrieved_topic = dynamic_cast<eprosima::fastdds::dds::Topic*>(participant->lookup_topicdescription(topic));
+      dds::Topic *retrieved_topic = dynamic_cast<eprosima::fastdds::dds::Topic *>(participant->lookup_topicdescription(topic));
       if (retrieved_topic == nullptr)
       {
         topic_ = participant_->create_topic(topic, message_type_.get_type_support().get_type_name(), topic_qos);
@@ -70,7 +70,7 @@ namespace lwrcl
       writer_qos.endpoint().history_memory_policy = rtps::PREALLOCATED_WITH_REALLOC_MEMORY_MODE;
       // writer_qos.data_sharing().automatic();
       writer_qos.history().depth = qos.get_depth();
-      if(qos.get_history() == QoS::HistoryPolicy::KEEP_ALL)
+      if (qos.get_history() == QoS::HistoryPolicy::KEEP_ALL)
       {
         writer_qos.history().kind = eprosima::fastdds::dds::KEEP_ALL_HISTORY_QOS;
       }
@@ -78,7 +78,7 @@ namespace lwrcl
       {
         writer_qos.history().kind = eprosima::fastdds::dds::KEEP_LAST_HISTORY_QOS;
       }
-      if(qos.get_reliability() == QoS::ReliabilityPolicy::BEST_EFFORT)
+      if (qos.get_reliability() == QoS::ReliabilityPolicy::BEST_EFFORT)
       {
         writer_qos.reliability().kind = eprosima::fastdds::dds::BEST_EFFORT_RELIABILITY_QOS;
       }
@@ -86,7 +86,7 @@ namespace lwrcl
       {
         writer_qos.reliability().kind = eprosima::fastdds::dds::RELIABLE_RELIABILITY_QOS;
       }
-      if(qos.get_durability() == QoS::DurabilityPolicy::VOLATILE)
+      if (qos.get_durability() == QoS::DurabilityPolicy::VOLATILE)
       {
         writer_qos.durability().kind = eprosima::fastdds::dds::VOLATILE_DURABILITY_QOS;
       }
@@ -137,7 +137,7 @@ namespace lwrcl
       return listener_.count;
     }
 
-  using SharedPtr = std::shared_ptr<Publisher<T>>;
+    using SharedPtr = std::shared_ptr<Publisher<T>>;
 
   private:
     dds::DomainParticipant *participant_;
