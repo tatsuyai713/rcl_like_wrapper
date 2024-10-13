@@ -100,7 +100,7 @@ These classes provide a foundational framework for precise time management and r
 
 ### Parameter Server
 
-The `ParameterServer` class provides a centralized storage mechanism for managing parameters within the Fast DDS ecosystem. It allows nodes to set, get, and declare parameters, enabling efficient parameter management across multiple nodes.
+The `ParameterServer` class provides a centralized storage mechanism for managing parameters within the Fast DDS ecosystem. It allows nodes to set, get, and declare parameters, enabling efficient parameter management.
 
 ### Parameter Client
 
