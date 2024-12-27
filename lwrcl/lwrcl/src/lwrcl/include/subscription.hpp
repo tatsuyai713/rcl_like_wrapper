@@ -9,6 +9,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <mutex>
 
 #include "fast_dds_header.hpp"
 #include "qos.hpp"
@@ -20,8 +21,8 @@ namespace lwrcl
   class SubscriberCallback : public ChannelCallback
   {
   public:
-    SubscriberCallback(std::function<void(std::shared_ptr<T>)> callback_function, std::vector<std::shared_ptr<T>> *message_buffer)
-        : callback_function_(callback_function), message_buffer_(message_buffer) {}
+    SubscriberCallback(std::function<void(std::shared_ptr<T>)> callback_function, std::vector<std::shared_ptr<T>> *message_buffer, std::mutex *lwrcl_subscriber_mutex_ptr)
+        : callback_function_(callback_function), message_buffer_(message_buffer), lwrcl_subscriber_mutex_ptr_(lwrcl_subscriber_mutex_ptr) {}
 
     ~SubscriberCallback() = default;
 
@@ -29,6 +30,7 @@ namespace lwrcl
     {
       try
       {
+        std::lock_guard<std::mutex> lock(*lwrcl_subscriber_mutex_ptr_);
         if (!message_buffer_->empty())
         {
           callback_function_(message_buffer_->front());
@@ -52,6 +54,7 @@ namespace lwrcl
   private:
     std::function<void(std::shared_ptr<T>)> callback_function_;
     std::vector<std::shared_ptr<T>> *message_buffer_;
+    std::mutex * lwrcl_subscriber_mutex_ptr_;
   };
 
   template <typename T>
@@ -61,7 +64,7 @@ namespace lwrcl
     SubscriberWaitSet(std::function<void(std::shared_ptr<T>)> callback_function, Channel<ChannelCallback *>::SharedPtr channel)
         : callback_function_(callback_function), channel_(channel)
     {
-      subscription_callback_ = std::make_unique<SubscriberCallback<T>>(callback_function_, &message_ptr_buffer_);
+      subscription_callback_ = std::make_unique<SubscriberCallback<T>>(callback_function_, &message_ptr_buffer_, &lwrcl_subscriber_mutex_);
     }
 
     ~SubscriberWaitSet()
@@ -126,7 +129,7 @@ namespace lwrcl
                 {
                   if (info_.valid_data)
                   {
-                    // copy
+                    std::lock_guard<std::mutex> lock(lwrcl_subscriber_mutex_);
                     auto data_ptr = std::shared_ptr<T>(new T(data_), [](T *ptr)
                                                        { delete ptr; });
                     message_ptr_buffer_.emplace_back(data_ptr);
@@ -157,6 +160,7 @@ namespace lwrcl
     eprosima::fastdds::dds::WaitSet wait_set_;
     T data_;
     eprosima::fastdds::dds::SampleInfo info_;
+    std::mutex lwrcl_subscriber_mutex_;
   };
 
   class ISubscription
