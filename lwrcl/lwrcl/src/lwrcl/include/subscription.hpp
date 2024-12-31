@@ -17,6 +17,32 @@
 
 namespace lwrcl
 {
+  struct MessageInfo
+  {
+    std::chrono::system_clock::time_point source_timestamp;
+    bool from_intra_process = false;
+  };
+  enum class WaitResultKind
+  {
+    Ready,
+    Timeout,
+    Error
+  };
+  class WaitResult
+  {
+  public:
+    explicit WaitResult(WaitResultKind k)
+        : kind_(k) {}
+    WaitResultKind kind() const { return kind_; }
+
+  private:
+    WaitResultKind kind_;
+  };
+  struct SubscriptionHolder
+  {
+    std::function<bool()> has_message;
+    std::function<bool(void *, MessageInfo &)> take;
+  };
   template <typename T>
   class SubscriberCallback : public ChannelCallback
   {
@@ -54,7 +80,7 @@ namespace lwrcl
   private:
     std::function<void(std::shared_ptr<T>)> callback_function_;
     std::vector<std::shared_ptr<T>> *message_buffer_;
-    std::mutex * lwrcl_subscriber_mutex_ptr_;
+    mutable std::mutex *lwrcl_subscriber_mutex_ptr_;
   };
 
   template <typename T>
@@ -101,6 +127,27 @@ namespace lwrcl
       return count_.load();
     }
 
+  public:
+    bool take(T &out_msg, lwrcl::MessageInfo &info)
+    {
+      std::lock_guard<std::mutex> lock(lwrcl_subscriber_mutex_);
+      if (pollable_buffer_.empty())
+      {
+        return false;
+      }
+      auto &front = pollable_buffer_.front();
+      out_msg = *(front.first);
+      info = front.second;
+      pollable_buffer_.erase(pollable_buffer_.begin());
+      return true;
+    }
+
+    bool has_message() const
+    {
+      std::lock_guard<std::mutex> lock(lwrcl_subscriber_mutex_);
+      return !pollable_buffer_.empty();
+    }
+
   private:
     void run()
     {
@@ -134,6 +181,10 @@ namespace lwrcl
                                                        { delete ptr; });
                     message_ptr_buffer_.emplace_back(data_ptr);
                     channel_->produce(subscription_callback_.get());
+                    lwrcl::MessageInfo new_info;
+                    new_info.source_timestamp = std::chrono::system_clock::now();
+                    new_info.from_intra_process = false;
+                    pollable_buffer_.emplace_back(data_ptr, new_info);
                   }
                   else
                   {
@@ -160,7 +211,8 @@ namespace lwrcl
     eprosima::fastdds::dds::WaitSet wait_set_;
     T data_;
     eprosima::fastdds::dds::SampleInfo info_;
-    std::mutex lwrcl_subscriber_mutex_;
+    mutable std::mutex lwrcl_subscriber_mutex_;
+    std::vector<std::pair<std::shared_ptr<T>, lwrcl::MessageInfo>> pollable_buffer_;
   };
 
   class ISubscription
@@ -279,6 +331,17 @@ namespace lwrcl
       waitset_.stop();
     }
 
+  public:
+    bool take(T &out_msg, lwrcl::MessageInfo &info)
+    {
+      return waitset_.take(out_msg, info);
+    }
+
+    bool has_message() const
+    {
+      return waitset_.has_message();
+    }
+
   private:
     eprosima::fastdds::dds::DomainParticipant *participant_;
     SubscriberWaitSet<T> waitset_;
@@ -288,7 +351,82 @@ namespace lwrcl
     lwrcl::MessageType message_type_;
     bool topic_owned_;
   };
+  
+  class WaitSet
+  {
+  public:
+    WaitSet() = default;
 
+    template <typename T>
+    WaitSet(std::initializer_list<std::shared_ptr<Subscription<T>>> init_list)
+    {
+      for (auto & sub : init_list) {
+        add_subscription<T>(sub);
+      }
+    }
+
+template <typename T>
+    void add_subscription(std::shared_ptr<Subscription<T>> sub)
+    {
+      SubscriptionHolder holder;
+      holder.has_message = [sub]() -> bool {
+        return sub->has_message();
+      };
+      holder.take = [sub](void * data_ptr, MessageInfo & info) -> bool {
+        T* typed_ptr = static_cast<T*>(data_ptr);
+        return sub->take(*typed_ptr, info);
+      };
+      subs_.push_back(holder);
+    }
+
+    WaitResult wait()
+    {
+      return wait_for(std::chrono::nanoseconds(-1));
+    }
+
+    template <typename Rep, typename Period>
+    WaitResult wait(std::chrono::duration<Rep, Period> timeout)
+    {
+      // timeout を nanoseconds に変換
+      auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(timeout);
+      return wait_for(ns);
+    }
+
+    WaitResult wait_for(std::chrono::nanoseconds timeout)
+    {
+      auto start = std::chrono::steady_clock::now();
+      while (true)
+      {
+        for (auto &holder : subs_)
+        {
+          if (holder.has_message())
+          {
+            return WaitResult(WaitResultKind::Ready);
+          }
+        }
+
+        if (timeout.count() >= 0)
+        {
+          auto now = std::chrono::steady_clock::now();
+          if (now - start >= timeout)
+          {
+            return WaitResult(WaitResultKind::Timeout);
+          }
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+      return WaitResult(WaitResultKind::Error);
+    }
+
+    const std::vector<SubscriptionHolder> &get_subscriptions() const
+    {
+      return subs_;
+    }
+
+  private:
+    std::vector<SubscriptionHolder> subs_;
+  };
 } // namespace lwrcl
 
 #endif // LWRCL_SUBSCRIBER_HPP_

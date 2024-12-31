@@ -28,6 +28,11 @@ namespace rclcpp {
     using Publisher = ::lwrcl::Publisher<MessageType>;
     
     using TimerBase = lwrcl::TimerBase;
+
+    using WaitSet = lwrcl::WaitSet;
+    using WaitResult = lwrcl::WaitResult;
+    using WaitResultKind = lwrcl::WaitResultKind;
+    using MessageInfo = lwrcl::MessageInfo;
     
 
     inline bool ok() {
